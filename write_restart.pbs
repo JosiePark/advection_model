@@ -1,0 +1,16 @@
+#!/bin/sh
+#PBS -l walltime=00:30:00
+#PBS -l select=1:ncpus=1:mem=8GB
+
+
+# Serial
+
+module load intel-suite
+module load fftw
+export NETCDF_VERSION=4.3.3                
+module load netcdf/$NETCDF_VERSION  
+module load mpi  
+
+${HOME}/WORK/CODE/BUILD/write_restart                                        
+pbsdsh2 cp ${TMPDIR}/QG_condensed.nc ${HOME}/WORK/DATA/1/QG
+

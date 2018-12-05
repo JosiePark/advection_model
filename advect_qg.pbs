@@ -1,0 +1,8 @@
+#!/bin/sh
+#PBS -N pseudo_uniformbins
+#PBS -m bea
+#PBS -q medium
+
+/home/clustor2/ma/j/jp1115/CODE/BUILD/offline_transport_pseudo
+
+

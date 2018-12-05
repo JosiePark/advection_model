@@ -1,0 +1,16 @@
+#!/bin/sh
+#PBS -l walltime=24:00:00
+#PBS -lselect=1:ncpus=1:mem=8GB
+
+
+# Serial
+
+module load intel-suite
+module load fftw
+export NETCDF_VERSION=4.3.3                
+module load netcdf/$NETCDF_VERSION  
+module load mpi  
+
+pbsexec /${WORK}/TEST_CODE/BUILD/write_eof                                          
+pbsdsh2 cp ${TMPDIR}/EOF_field_56.nc ${WORK}/saves/2/QG/ATTEMPT_2
+

@@ -1,0 +1,35 @@
+include standard_defs.mk
+
+SOURCE = $(MISC_DIR)/create_ave_new.f
+EXE = $(BUILD_DIR)/create_ave
+
+
+
+pv: subsystem1 subsystem2 subsystem3 subsystem4 $(EXE)
+subsystem1:
+	cd $(INPUT_DIR) && $(MAKE)
+
+subsystem2: 
+	cd $(VAR_DIR) && $(MAKE)
+
+subsystem3:
+	cd $(NETCDF_DIR) && $(MAKE)
+
+subsystem4:
+	cd $(LAGR_DIR) && $(MAKE)
+
+
+$(EXE): $(SOURCE) $(BUILD_DIR)/*.o
+	$(CC) $(SOURCE) $(BUILD_DIR)/*.o -o $(EXE) $(CFLAGS) $(INCLUDES) $(LIBS) $(LINKS)
+
+
+clean: 
+	cd $(BUILD_DIR) && rm *.o *.mod 
+	 
+
+	
+
+
+
+
+

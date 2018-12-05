@@ -1,0 +1,36 @@
+include standard_defs.mk
+
+TRANSPORT_SOURCE = $(SRC_DIR)/offline_transport_PV_bins.f
+TRANSPORT_EXE = $(BUILD_DIR)/offline_transport_full
+
+
+VPATH = build 
+transport: subsystem1 subsystem2 subsystem3 subsystem4 $(TRANSPORT_EXE)
+
+subsystem1:
+	cd $(INPUT_DIR) && $(MAKE)
+
+subsystem2:
+	cd $(VAR_DIR) && $(MAKE)
+
+subsystem3:
+	cd $(NETCDF_DIR) && $(MAKE)
+
+subsystem4:
+	cd $(LAGR_DIR) && $(MAKE)
+
+
+$(TRANSPORT_EXE): $(TRANSPORT_SOURCE) $(BUILD_DIR)/*.o
+	$(CC) $(TRANSPORT_SOURCE) $(BUILD_DIR)/*.o -o $(TRANSPORT_EXE) $(CFLAGS) $(INCLUDES) $(LIBS) $(LINKS)
+
+
+clean: 
+	cd $(BUILD_DIR) 
+	 
+
+	
+
+
+
+
+
