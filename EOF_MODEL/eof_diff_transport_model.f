@@ -55,15 +55,25 @@ c ----- Initialise trajectory arrays
      & ,x2r_pseudo_coord(nbins,npoints)
      & ,y1r_pseudo_coord(nbins,npoints)
      & ,y2r_pseudo_coord(nbins,npoints))  
+     
+        allocate(x1r_eddy(nbins,npoints)
+     & ,x2r_eddy(nbins,npoints)
+     & ,y1r_eddy(nbins,npoints),y2r_eddy(nbins,npoints)
+     & ,x1r_eddy_coord(nbins,npoints)
+     & ,x2r_eddy_coord(nbins,npoints)
+     & ,y1r_eddy_coord(nbins,npoints)
+     & ,y2r_eddy_coord(nbins,npoints))
         
         print*,'traj_file', traj_file
         print*,'full_traj_file', full_traj_file
+        print*,'eddy_traj_file',eddy_traj_file
         print*,'file_name', file_name
         print*,'ave_name', ave_name
         if (i_start .eq. 0) then
         print*,'i_start = 0'
         call create_binned_file(traj_file,nbins,npoints,release_no)
         call create_binned_file(full_traj_file,nbins,npoints,release_no)
+        call create_binned_file(eddy_traj_file,nbins,npoints,release_no)
         release_start = 1
         else
         !!!! EDIT TO READ BOTH LAYERS !!!! 
@@ -196,6 +206,16 @@ c BIN PARTICLES UNIFORMLY
             y1r_pseudo_coord(p,n) = 0
             x2r_pseudo_coord(p,n) = 0
             y2r_pseudo_coord(p,n) = 0
+            
+            x1r_eddy(p,n) = x0
+            y1r_eddy(p,n) = y0
+            x2r_eddy(p,n) = x0
+            y2r_eddy(p,n) = y0
+            
+            x1r_eddy_coord(p,n) = 0
+            y1r_eddy_coord(p,n) = 0
+            x2r_eddy_coord(p,n) = 0
+            y2r_eddy_coord(p,n) = 0
 
       
       enddo
@@ -216,6 +236,20 @@ c BIN PARTICLES UNIFORMLY
                         
 
             call write_binned_file(traj_file,npoints,p,k
+     &       ,x1,y1
+     &       ,x2,y2
+     &       ,x1_coord,y1_coord,x2_coord
+     &       ,y2_coord
+     &       ,release_time(k),nrel(k))
+     
+            call write_binned_file(full_traj_file,npoints,p,k
+     &       ,x1,y1
+     &       ,x2,y2
+     &       ,x1_coord,y1_coord,x2_coord
+     &       ,y2_coord
+     &       ,release_time(k),nrel(k))
+     
+            call write_binned_file(eddy_traj_file,npoints,p,k
      &       ,x1,y1
      &       ,x2,y2
      &       ,x1_coord,y1_coord,x2_coord
@@ -315,6 +349,8 @@ c ---- time_o(k)
         call interp_time(ii,jj,time_cubic,time_dim(t)
      &        ,psi2_eof,psi2_new)
      
+        psi1_eddy_new = psi1_new - psi1_av
+        psi2_eddy_new = psi2_new - psi2_av
         !call interp_time(ii,jj,time_cubic,time_dim(t),psi1,psi1_new)
         !call interp_time(ii,jj,time_cubic,time_dim(t),psi2,psi2_new)
         
@@ -331,6 +367,9 @@ c ----- time_o(k-1)
         call interp_time(ii,jj,time_cubic,time_dim(t-1)
      &        ,psi2_eof,psi2_old)
      
+        psi1_eddy_old = psi1_old - psi1_av
+        psi2_eddy_old = psi2_old - psi2_av
+     
         !call interp_time(ii,jj,time_cubic,time_dim(t-1),psi1,psi1_old)
         !call interp_time(ii,jj,time_cubic,time_dim(t-1),psi2,psi2_old)
         
@@ -346,6 +385,9 @@ c ----- time_half
         call interp_time(ii,jj,time_cubic,time_half
      &        ,psi2_eof,psi2_half)
      
+        psi1_eddy_half = psi1_half - psi1_av
+        psi2_eddy_half = psi2_half - psi2_av
+     
         !call interp_time(ii,jj,time_cubic,time_half,psi1,psi1_half)
         !call interp_time(ii,jj,time_cubic,time_half,psi2,psi2_half)
         
@@ -360,11 +402,17 @@ c --------------- CALCULATE COEFFICIENTS FOR SPATIAL INTERPOLATION -----------
       call A_matrix(ii,jj,psi1_old,M1_old)
       call A_matrix(ii,jj,psi2_old,M2_old)
       
+      call A_matrix(ii,jj,psi1_eddy_old,M1_eddy_old)
+      call A_matrix(ii,jj,psi2_eddy_old,M2_eddy_old)
+      
       
       else
       
       M1_old = M1_new
       M2_old = M2_new
+      
+      M1_eddy_old = M1_eddy_new
+      M2_eddy_old = M2_eddy_new
       
       
       
@@ -374,6 +422,11 @@ c --------------- CALCULATE COEFFICIENTS FOR SPATIAL INTERPOLATION -----------
       call A_matrix(ii,jj,psi2_half,M2_half)
       call A_matrix(ii,jj,psi1_new,M1_new)
       call A_matrix(ii,jj,psi2_new,M2_new)
+      
+      call A_matrix(ii,jj,psi1_eddy_half,M1_eddy_half)
+      call A_matrix(ii,jj,psi2_eddy_half,M2_eddy_half)
+      call A_matrix(ii,jj,psi1_eddy_new,M1_eddy_new)
+      call A_matrix(ii,jj,psi2_eddy_new,M2_eddy_new)
  
       else if (isolve.eq.1) then
       
@@ -401,6 +454,15 @@ c --------------- CALCULATE COEFFICIENTS FOR SPATIAL INTERPOLATION -----------
       d1_old = d1_new
       d2_old = d2_new
       
+      a1_eddy_old = a1_eddy_new
+      a2_eddy_old = a2_eddy_new
+      b1_eddy_old = b1_eddy_new
+      b2_eddy_old = b2_eddy_new
+      c1_eddy_old = c1_eddy_new
+      c2_eddy_old = c2_eddy_new
+      d1_eddy_old = d1_eddy_new
+      d2_eddy_old = d2_eddy_new
+      
       
       end if
      
@@ -413,6 +475,15 @@ c --------------- CALCULATE COEFFICIENTS FOR SPATIAL INTERPOLATION -----------
      &,a1_new,b1_new,c1_new,d1_new)
       call cubic_coeff_x(ii,jj,psi2_new
      &,a2_new,b2_new,c2_new,d2_new)
+     
+      call cubic_coeff_x(ii,jj,psi1_eddy_half
+     &,a1_eddy_half,b1_eddy_half,c1_eddy_half,d1_eddy_half)
+      call cubic_coeff_x(ii,jj,psi2_eddy_half
+     &,a2_eddy_half,b2_eddy_half,c2_eddy_half,d2_eddy_half)
+      call cubic_coeff_x(ii,jj,psi1_eddy_new
+     &,a1_eddy_new,b1_eddy_new,c1_eddy_new,d1_eddy_new)
+      call cubic_coeff_x(ii,jj,psi2_eddy_new
+     &,a2_new,b2_eddy_new,c2_eddy_new,d2_eddy_new)
      
       endif
       
@@ -477,9 +548,8 @@ c MEAN CONTRIBUTION FOR THE PSEUDO TRAJECTORIES
      & ,x_av_diff2,y_av_diff2)
         
         endif 
-             
         
-        
+
         x1r(p,n) = x1r(p,n) + x_diff1
         y1r(p,n) = y1r(p,n) + y_diff1
         x2r(p,n) = x2r(p,n) + x_diff2
@@ -559,6 +629,76 @@ c MEAN CONTRIBUTION FOR THE PSEUDO TRAJECTORIES
               y2r_pseudo_coord(p,n)= y2r_pseudo_coord(p,n) +1
             endif
 
+c EDDY ONLY TRAJECTORIES
+
+        if (isolve.eq.0) then
+        
+        call rk4_bicubic(ii,jj,x1r_eddy(p,n),y1r_eddy(p,n)
+     &   ,dt_nondim,U_0,M1_eddy_old,M1_eddy_half,M1_eddy_new
+     & ,x_diff1,y_diff1)
+        call rk4_bicubic(ii,jj,x2r_eddy(p,n),y2r_eddy(p,n)
+     &   ,dt_nondim,dfloat(0),M2_eddy_old,M2_eddy_half,M2_eddy_new
+     & ,x_diff2,y_diff2)
+        
+        elseif (isolve.eq.1) then
+        
+        
+        call rk4_2dcubic(ii,jj,x1r_eddy(p,n),y1r_eddy(p,n)
+     &   ,dt_nondim,U_0,a1_eddy_old,b1_eddy_old,c1_eddy_old
+     & ,d1_eddy_old,a1_eddy_half,b1_eddy_half,c1_eddy_half,d1_eddy_half
+     & ,a1_eddy_new,b1_eddy_new,c1_eddy_new,d1_eddy_new
+     & ,x_diff1,y_diff1)
+        call rk4_2dcubic(ii,jj,x2r_eddy(p,n),y2r_eddy(p,n)
+     &   ,dt_nondim,dfloat(0),a2_eddy_old,b2_eddy_old,c2_eddy_old
+     & ,d2_eddy_old,a2_eddy_half,b2_eddy_half,c2_eddy_half,d2_eddy_half
+     & ,a2_eddy_new,b2_eddy_new,c2_eddy_new,d2_eddy_new
+     & ,x_diff2,y_diff2)
+        
+        endif
+        
+        x1r_eddy(p,n) = x1r_eddy(p,n) + x_diff1
+        y1r_eddy(p,n) = y1r_eddy(p,n) + y_diff1
+        x2r_eddy(p,n) = x2r_eddy(p,n) + x_diff2
+        y2r_eddy(p,n) = y2r_eddy(p,n) + y_diff2
+        
+        
+            if(x1r_eddy(p,n).lt.0)then
+                x1r_eddy(p,n) = dfloat(ii)+x1r_eddy(p,n)
+                x1r_eddy_coord(p,n)=x1r_eddy_coord(p,n)-1
+            end if
+            if(x1r_eddy(p,n).gt.dfloat(ii))then
+                x1r_eddy(p,n) = x1r_eddy(p,n) - dfloat(ii)
+                x1r_eddy_coord(p,n) = x1r_eddy_coord(p,n)+1
+            endif
+            if(y1r_eddy(p,n).lt.0.)then
+              y1r_eddy(p,n)=dfloat(jj)+y1r_eddy(p,n)
+              y1r_eddy_coord(p,n) = y1r_eddy_coord(p,n) -1
+            endif
+            if(y1r_eddy(p,n).gt.dfloat(jj))then
+              y1r_eddy(p,n)=y1r_eddy(p,n)-dfloat(jj)
+              y1r_eddy_coord(p,n)= y1r_eddy_coord(p,n) +1
+            endif
+            
+            if(x2r_eddy(p,n).lt.0)then
+                x2r_eddy(p,n) = dfloat(ii)+x2r_eddy(p,n)
+                x2r_eddy_coord(p,n)=x2r_eddy_coord(p,n)-1
+            end if
+            if(x2r_eddy(p,n).gt.dfloat(ii))then
+                x2r_eddy(p,n) = x2r_eddy(p,n) - dfloat(ii)
+                x2r_eddy_coord(p,n) = x2r_eddy_coord(p,n)+1
+            endif
+            if(y2r_eddy(p,n).lt.0.)then
+              y2r_eddy(p,n)=dfloat(jj)+y2r_eddy(p,n)
+              y2r_eddy_coord(p,n) = y2r_eddy_coord(p,n) -1
+            endif
+            if(y2r_eddy(p,n).gt.dfloat(jj))then
+              y2r_eddy(p,n)=y2r_eddy(p,n)-dfloat(jj)
+              y2r_eddy_coord(p,n)= y2r_eddy_coord(p,n) +1
+            endif
+        
+        
+
+        
             
             
             enddo
@@ -604,7 +744,41 @@ c     &       ((time_dim(k).lt.release_time(t) + release_length)))then
      &       ,x2_coord,y2_coord
      &       ,time_day,nrel(k))
      
-            !endif
+            x1 = x1r(p,:)
+            x2 = x2r(p,:)
+            y1 = y1r(p,:)
+            y2 = y2r(p,:)
+            
+            x1_coord = x1r_coord(p,:)
+            x2_coord = x2r_coord(p,:)
+            y1_coord = y1r_coord(p,:)
+            y2_coord = y2r_coord(p,:)
+            
+            call write_binned_file(full_traj_file,npoints,p,k
+     &       ,x1
+     &       ,y1
+     &       ,x2,y2
+     &       ,x1_coord,y1_coord
+     &       ,x2_coord,y2_coord
+     &       ,time_day,nrel(k))
+     
+            x1 = x1r_eddy(p,:)
+            x2 = x2r_eddy(p,:)
+            y1 = y1r_eddy(p,:)
+            y2 = y2r_eddy(p,:)
+            
+            x1_coord = x1r_eddy_coord(p,:)
+            x2_coord = x2r_eddy_coord(p,:)
+            y1_coord = y1r_eddy_coord(p,:)
+            y2_coord = y2r_eddy_coord(p,:)
+            
+            call write_binned_file(eddy_traj_file,npoints,p,k
+     &       ,x1
+     &       ,y1
+     &       ,x2,y2
+     &       ,x1_coord,y1_coord
+     &       ,x2_coord,y2_coord
+     &       ,time_day,nrel(k))
             
             enddo
             nrel(k) = nrel(k) + 1

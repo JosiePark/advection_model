@@ -1,19 +1,26 @@
  traj_file
- /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1234
- 78_pseudo.nc
+ /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1-10
+ _pseudo_new.nc
  full_traj_file
- /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1234
- 78_full.nc
+ /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1-10
+ _full_new.nc
+ eddy_traj_file
+ /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1-10
+ _eddy_new.nc
  file_name/home/clustor2/ma/j/jp1115/DATA/1/QG/QG.nc
  ave_name/home/clustor2/ma/j/jp1115/DATA/1/QG/QG_ave.nc
  i_start = 0
  !!! Netcdf file created i.e. 
- /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1234
- 78_pseudo.nc!!!
+ /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1-10
+ _pseudo_new.nc!!!
  !!!                                         !!!
  !!! Netcdf file created i.e. 
- /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1234
- 78_full.nc!!!
+ /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1-10
+ _full_new.nc!!!
+ !!!                                         !!!
+ !!! Netcdf file created i.e. 
+ /home/clustor2/ma/j/jp1115/DATA/1/TRAJ/UNIFORM_BINS/EOF_trajectories_minus_1-10
+ _eddy_new.nc!!!
  !!!                                         !!!
  file_name=/home/clustor2/ma/j/jp1115/DATA/1/QG/QG.nc
  time read

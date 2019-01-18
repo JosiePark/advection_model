@@ -10,7 +10,7 @@ c CODE THE READS EOF AND PC FILES AND WRITES A COMBINED EOF FIELD TO A NETCDF FI
 c NAME FILES
 
       character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/2/'
+     & '/home/clustor2/ma/j/jp1115/DATA/1/'
 
        character*(*), parameter :: qg_file = 
      &   trim(home_dir) // 'QG/QG.nc'
@@ -21,7 +21,7 @@ c NAME FILES
       character*(*), parameter :: pc_file =
      &  trim(home_dir) // 'STATS/EOF/pc.nc'
       character*(*), parameter :: new_file = 
-     &   trim(home_dir) // 'QG/psi_minus_235678.nc'
+     &   trim(home_dir) // 'QG/psi_minus-1-20.nc'
       
 c TIME VARIABLES
       integer t_len
@@ -32,7 +32,7 @@ c TIME VARIABLES
 c EOF VARIABLES
 
       integer nmodes,ii,jj
-      parameter(nmodes = 6,ii=512,jj=512)
+      parameter(nmodes = 20,ii=512,jj=512)
       parameter(eof_option = 0)
 
       real*8 eof(nmodes,ii,jj,2),PC(nmodes),eof_field(ii,jj,2)
@@ -48,7 +48,7 @@ C READ TIME
       call read_time(qg_file,time,t_len)
       print*,'t_len=',t_len
       
-      modes = (/2,3,5,6,7,8/)
+      modes = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20/)
       
 C READ EOF.NC  
 

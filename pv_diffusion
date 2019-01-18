@@ -1,7 +1,7 @@
 include standard_defs.mk
 
 DIFFUSION_SOURCE = $(DIFF_DIR)/pv_diffusion_model.f
-DIFFUSION_EXE = $(BUILD_DIR)/pv_diffusion_model
+DIFFUSION_EXE = $(BUILD_DIR)/pv_diffusion_model_2
 
 
 VPATH = build 

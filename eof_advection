@@ -1,7 +1,7 @@
 include standard_defs.mk
 
 TRANSPORT_SOURCE = $(EOF_DIR)/eof_transport_model.f
-TRANSPORT_EXE = $(BUILD_DIR)/eof_model_123478
+TRANSPORT_EXE = $(BUILD_DIR)/eof_model_1-4
 
 
 VPATH = build 

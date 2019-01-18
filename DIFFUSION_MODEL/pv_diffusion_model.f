@@ -54,12 +54,14 @@ c CALCULATE BIN CENTRES
 
       bin_boundaries(1) = 0.
       do b = 2,nbins+1
-        bin_boundaries(b) = bin_boundaries(b-1) + bin_width(b)
+        bin_boundaries(b) = bin_boundaries(b-1) + bin_width(b-1)
       enddo
 
       do b = 1,nbins
         bin_centres(b) = .5*(bin_boundaries(b)+bin_boundaries(b+1))
       enddo
+      print*,'bin_boundaries =',bin_boundaries
+      print*,'bin_centre=',bin_centres
       
 c DETERMINE BINS
 
@@ -68,6 +70,8 @@ c DETERMINE BINS
       bin_corners(b) = (b-1)*(dfloat(jj)/nbins)
       
       enddo
+      
+      print*,'bin_corners=',bin_corners
 
       
 c CALCULATE BIN CENTRES
@@ -78,6 +82,7 @@ c CALCULATE BIN CENTRES
       
       enddo
       
+      print*,'uniform_bins = ',uniform_bins
 C READ THE DIFFUSIVITY TENSOR
 
       call read_PV_diffusivity(pvdiff_file,KPV)
@@ -96,14 +101,19 @@ c  SEED PARTICLES UNIFORMALLY IN EACH BIN
       do n = 1,npoints
       do b = 1,nbins
       
-        y1(n,b) = ran1(iseed)*bin_width(b)
-     &             + bin_boundaries(b)
+        y1(n,b) = ran1(iseed)*(dfloat(ii)/nbins)
+     &             + bin_corners(b)
         x1(n,b) = ran1(iseed)*dfloat(ii)
       
       enddo
       enddo
       
+      
+      y1_traj = y1
+      x1_traj = x1
+      
       print*,'particles seeded'
+
       
       call create_pvdiffusion_trajfile(file_name,npoints,nbins)
       
@@ -137,8 +147,8 @@ C MAIN CYCLE
             
             time(t) = time(t-1) + dt/86400. ! time in days
             k_s = k_s + dt/86400.
-            print*,'time = ',time(t)
-            print*,'k_s =', k_s
+            !print*,'time = ',time(t)
+            !print*,'k_s =', k_s
       
             do b = 1,nbins
             do n = 1,npoints
@@ -166,6 +176,7 @@ c INTERPOLATE THE EDDY-DIFFUSIVITY AT THE PARTICLE LOCATION
                   call diffusivity_interp_1d(bin_centres,nbins,KPV
      &                  ,ii,y1(n,b),Ky1)
                   
+                  
 
                   
 c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM    
@@ -173,6 +184,7 @@ c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM
                   dKdx1 = 0.
                   call diffusivity_derivative(bin_centres,nbins
      &                  ,KPV,ii,y1(n,b),dKdy1)
+                 
 
      
                 
@@ -199,10 +211,11 @@ c11      continue
 
 C ADVECT PARTICLES
       
-                  x1_diff = (u1+U_0+dKdx1)*dt_nondim + 
-     &                  dsqrt(2*Kx1)*random_normal()*dt_nondim
+                  x1_diff = (u1+dKdx1)*dt_nondim + 
+     &                  dsqrt(2*Kx1)*random_normal()*dsqrt(dt_nondim)
                   y1_diff = (v1+dKdy1)*dt_nondim + 
-     &                  dsqrt(2*Ky1)*random_normal()*dt_nondim
+     &                  dsqrt(2*Ky1)*random_normal()*dsqrt(dt_nondim)
+
                   
      
                   x1(n,b) = x1(n,b) + x1_diff
@@ -210,6 +223,7 @@ C ADVECT PARTICLES
                   
                   x1_traj(n,b) = x1_traj(n,b) + x1_diff
                   y1_traj(n,b) = y1_traj(n,b) + y1_diff
+
       
       
 c APPLY DOUBLY PERIODIC BOUNDARY CONDITIONS
@@ -244,6 +258,7 @@ C WRITE TO NETCDF FILE
       if(k_s + 0.001 .ge. k_save) then
       
         print*,'Saving at time',time(t)
+
         
         call write_pvdiffusion_trajfile(file_name,npoints,nbins
      & ,y1_traj,time(t),nrec)

@@ -1,7 +1,7 @@
 include standard_defs.mk
 
 DIFFUSION_SOURCE = $(DIFF_DIR)/diffusion_model.f
-DIFFUSION_EXE = $(BUILD_DIR)/diffusion_model_1
+DIFFUSION_EXE = $(BUILD_DIR)/diffusion_model_2
 
 
 VPATH = build 

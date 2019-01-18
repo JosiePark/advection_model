@@ -111,8 +111,8 @@ C MAIN CYCLE
             
             time(t) = time(t-1) + dt/86400. ! time in days
             k_s = k_s + dt/86400.
-            print*,'time = ',time(t)
-            print*,'k_s =', k_s
+            !print*,'time = ',time(t)
+            !print*,'k_s =', k_s
       
             do b = 1,nbins
             do n = 1,npoints
@@ -168,30 +168,30 @@ c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM
 
 C ADVECT PARTICLES
       
-                  x1_diff = (u1+U_0-.5*dKdx1)*dt_nondim + 
-     &                  dsqrt(2*Kx1)*random_normal()*dt_nondim
+                  x1_diff = (u1+U_0+dKdx1)*dt_nondim + 
+     &                  dsqrt(2*Kx1)*random_normal()*dsqrt(dt_nondim)
                   if(isnan(x1_diff)) then
                     print*,'dKdx1=',dKdx1
                     print*,'Kx1 =',Kx1
                     stop
                   endif
-                  y1_diff = (v1-.5*dKdy1)*dt_nondim + 
-     &                  dsqrt(2*Ky1)*random_normal()*dt_nondim
+                  y1_diff = (v1+dKdy1)*dt_nondim + 
+     &                  dsqrt(2*Ky1)*random_normal()*dsqrt(dt_nondim)
                   if(isnan(y1_diff)) then
                     print*,'dKdy1=',dKdy1
                     print*,'Ky1 =',Ky1
                     stop
                   endif
                   
-                  x2_diff = (u2-.5*dKdx2)*dt_nondim + 
-     &                  dsqrt(2*Kx2)*random_normal()*dt_nondim
+                  x2_diff = (u2+dKdx2)*dt_nondim + 
+     &                  dsqrt(2*Kx2)*random_normal()*dsqrt(dt_nondim)
                   if(isnan(x2_diff)) then
                     print*,'dKdx2=',dKdx2
                     print*,'Kx2 =',Kx2
                     stop
                   endif
-                  y2_diff =  (v2-.5*dKdy2)*dt_nondim + 
-     &                  dsqrt(2*Ky2)*random_normal()*dt_nondim
+                  y2_diff =  (v2+dKdy2)*dt_nondim + 
+     &                  dsqrt(2*Ky2)*random_normal()*dsqrt(dt_nondim)
                   if(isnan(y2_diff)) then
                     print*,'dKdy2=',dKdy2
                     print*,'Ky2 =',Ky2

@@ -1,9 +1,9 @@
 
 #!/bin/sh
-#PBS -N write_123478_1
+#PBS -N write_1-20_1
 #PBS -m bea
 #PBS -q standard
 
-/home/clustor2/ma/j/jp1115/CODE/BUILD/write_deduct_eof_235678
+/home/clustor2/ma/j/jp1115/CODE/BUILD/write_deduct_eof_1-20
 
 

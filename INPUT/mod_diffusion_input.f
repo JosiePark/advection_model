@@ -25,7 +25,7 @@ C MODULE THAT CONTAINS THE INPUTS FOR THE DIFFUSION MODEL
      & ,coord_range =3)
       
         character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
 
      
        character*(*), parameter :: file_name = 

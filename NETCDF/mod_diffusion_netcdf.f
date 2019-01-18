@@ -128,13 +128,14 @@ c ---------------------------------------------------------------------------
       integer npoints,nbins
       
       character*(*) traj_name,t_name,dim_name,part_name,bin_name
-     & ,lvl_name
+     & ,lvl_name,rec_name
       parameter(traj_name = 'Trajectories')
       parameter(part_name = 'Particle Number')
       parameter(dim_name = 'Dimension')
       parameter(bin_name = 'Bin')
       parameter(lvl_name = 'Layer')
       parameter(t_name = 'Time')
+      parameter(rec_name = 'Record Time')
       
       integer traj_varid,t_varid,lvl_dimid,dim_dimid,part_dimid
      & ,bin_dimid,t_dimid
@@ -150,7 +151,7 @@ c ---------------------------------------------------------------------------
       retval = nf_def_dim(ncid,part_name,npoints,part_dimid) ! defines particle numbers
       if (retval .ne. nf_noerr) call handle_err(retval)
       
-      retval = nf_def_dim(ncid,t_name,nf_unlimited,t_dimid) ! time, allowed to go to infinity
+      retval = nf_def_dim(ncid,rec_name,nf_unlimited,t_dimid) ! time, allowed to go to infinity
       if (retval .ne. nf_noerr) call handle_err(retval)
       
       retval = nf_def_dim(ncid,dim_name,2,dim_dimid) ! spatial dimensions for the location
@@ -201,13 +202,14 @@ c ------------------------------------------------------------------------------
       integer npoints,nbins
       
       character*(*) traj_name,t_name,dim_name,part_name,bin_name
-     & ,lvl_name
+     & ,lvl_name,rec_name
       parameter(traj_name = 'Trajectories')
       parameter(part_name = 'Particle Number')
       parameter(dim_name = 'Dimension')
       parameter(bin_name = 'Bin')
       parameter(lvl_name = 'Layer')
       parameter(t_name = 'Time')
+      parameter(rec_name = 'Record Time')
       
       integer traj_varid,t_varid,lvl_dimid,dim_dimid,part_dimid
      & ,bin_dimid,t_dimid
@@ -223,7 +225,7 @@ c ------------------------------------------------------------------------------
       retval = nf_def_dim(ncid,part_name,npoints,part_dimid) ! defines particle numbers
       if (retval .ne. nf_noerr) call handle_err(retval)
       
-      retval = nf_def_dim(ncid,t_name,nf_unlimited,t_dimid) ! time, allowed to go to infinity
+      retval = nf_def_dim(ncid,rec_name,nf_unlimited,t_dimid) ! time, allowed to go to infinity
       if (retval .ne. nf_noerr) call handle_err(retval)
       
       retval = nf_def_dim(ncid,bin_name,nbins,bin_dimid)
@@ -263,17 +265,18 @@ c ----------------------------------------------------------------------------
       include 'netcdf.inc'
       
       character*(*) file_name
-      integer npoints,nbins,nrec,p,b
+      integer npoints,nbins,nrec,p,b,t_len
       
       real*8 x1(npoints,nbins),x2(npoints,nbins)
      & ,y1(npoints,nbins),y2(npoints,nbins),time
       real*8 traj_temp(2,npoints,nbins,2)
      
-      character*(*) traj_name,t_name
+      character*(*) traj_name,t_name,rec_name
       parameter(traj_name = 'Trajectories')
       parameter(t_name = 'Time')
+      parameter(rec_name = 'Record Time')
       
-      integer traj_varid,t_varid
+      integer traj_varid,t_varid,t_dimid
       integer ncid,retval,ndims
       parameter(ndims = 5)
       integer count(ndims),start(ndims)
@@ -300,6 +303,10 @@ c ----------------------------------------------------------------------------
       
       enddo
       
+      print*,'nbins=',nbins
+      print*,'npoints=',npoints
+      print*,'nrec=',nrec
+      
       start(1) = 1
       start(2) = 1
       start(3) = 1
@@ -311,8 +318,17 @@ c ----------------------------------------------------------------------------
       count(4) = 2
       count(5) = 1
       
+      retval = nf_inq_dimid(ncid,rec_name,t_dimid) ! time, allowed to go to infinity
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      
+      retval = nf_inq_dimlen(ncid,t_dimid,t_len) ! time, allowed to go to infinity
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      print*,'t_len=',t_len
+      
       retval = nf_put_vara_double(ncid,traj_varid,start,count,traj_temp)
       if (retval .ne. nf_noerr) call handle_err(retval)
+      
+      print*,'traj written'
       
       retval = nf_put_vara_double(ncid,t_varid,nrec,1,time)
       if (retval .ne. nf_noerr) call handle_err(retval)

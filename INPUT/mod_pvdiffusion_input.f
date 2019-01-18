@@ -5,7 +5,7 @@
 c FILE NAMES
       
       character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
      
       character*(*),parameter :: traj_file =
      & trim(home_dir) // 'TRAJ/PV_BINS/full_PV_bins_trajectories.nc'
@@ -38,7 +38,7 @@ c PARAMETERS
       integer k_save,npoints_sqrt,npoints,nbins
       real*8 dt,max_run
      
-      parameter(npoints_sqrt = 1,npoints=4000)
+      parameter(npoints_sqrt = 1,npoints=10)
       parameter(dt = 3600.) ! how often in seconds you wish to advect particle
       parameter(max_run = 2000.) ! length of experiment in days
       parameter(k_save = 1) ! how often you wish to save trajectory data in days

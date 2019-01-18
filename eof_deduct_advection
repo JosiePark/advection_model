@@ -1,7 +1,7 @@
 include standard_defs.mk
 
 TRANSPORT_SOURCE = $(EOF_DIR)/eof_diff_transport_model.f
-TRANSPORT_EXE = $(BUILD_DIR)/eof_model_deduct_235678
+TRANSPORT_EXE = $(BUILD_DIR)/eof_model_deduct_1-10
 
 VPATH = build 
 transport: subsystem1 subsystem2 subsystem3 subsystem4 $(TRANSPORT_EXE)
