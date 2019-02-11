@@ -1,5 +1,5 @@
 
-CFLAGS = -O2 #-g -heap-arrays -traceback -check all -fp-stack-check -mcmodel=large
+CFLAGS = -C -g -traceback -O2 -heap-arrays -check all -fp-stack-check # -g -traceback -check all -fp-stack-check -mcmodel=large
 #NETCDF_VERSION=4.3.3
 CC = ifort
 
@@ -23,6 +23,7 @@ MISC_DIR = $(HOME_DIR)/MISC
 PVMAPPED_DIR = $(HOME_DIR)/PV_MAPPED
 DIFF_DIR = $(HOME_DIR)/DIFFUSION_MODEL
 EOF_DIR = $(HOME_DIR)/EOF_MODEL
+STOCH_DIR = $(HOME_DIR)/STOCHASTIC_PARAMETERS
 
 INCLUDE_DIR = /usr/include
 

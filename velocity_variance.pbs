@@ -1,0 +1,7 @@
+#!/bin/sh
+#PBS -N velocity_variance
+#PBS -m bea
+#PBS -q standard
+
+/home/clustor2/ma/j/jp1115/CODE/BUILD/velocity_variance
+

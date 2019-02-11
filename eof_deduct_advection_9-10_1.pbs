@@ -3,6 +3,6 @@
 #PBS -m bea
 #PBS -q standard
 
-/home/clustor2/ma/j/jp1115/CODE/BUILD/eof_model_deduct_9-10_1
+/home/clustor2/ma/j/jp1115/CODE/BUILD/eof_model_deduct_9-10
 
 

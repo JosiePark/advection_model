@@ -56,15 +56,15 @@ c OTHERWISE SET TO 0
      &   trim(home_dir) // 'QG/QG_ave.nc'
        character*(*), parameter :: full_traj_file =
      &   trim(home_dir) // 'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_minus_1-10_full_new.nc'  
+     &EOF_trajectories_minus_1-2_full_new.nc'  
        character*(*), parameter :: traj_file =
      &  trim(home_dir) // 'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_minus_1-10_pseudo_new.nc'
+     &EOF_trajectories_minus_1-2_pseudo_new.nc'
         character*(*), parameter :: eddy_traj_file =
      & trim(home_dir) //'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_minus_1-10_eddy_new.nc'
+     &EOF_trajectories_minus_1-2_eddy_new.nc'
        character*(*), parameter :: eof_file =
-     &  trim(home_dir) // 'QG/psi_minus_1-10.nc'
+     &  trim(home_dir) // 'QG/psi_minus_1-2.nc'
        character*(*), parameter :: pseudo_name =
      &   trim(home_dir) // 'TRAJ/UNIFORM_BINS/NEW
      &pseudo_uniform_bins_trajectories.nc' 

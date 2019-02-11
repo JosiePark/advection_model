@@ -21,7 +21,7 @@ c NAME FILES
       character*(*), parameter :: pc_file =
      &  trim(home_dir) // 'STATS/EOF/pc.nc'
       character*(*), parameter :: new_file = 
-     &   trim(home_dir) // 'QG/psi_minus-1-20.nc'
+     &   trim(home_dir) // 'QG/psi_minus_1-2_new.nc'
       
 c TIME VARIABLES
       integer t_len
@@ -32,7 +32,7 @@ c TIME VARIABLES
 c EOF VARIABLES
 
       integer nmodes,ii,jj
-      parameter(nmodes = 20,ii=512,jj=512)
+      parameter(nmodes = 2,ii=512,jj=512)
       parameter(eof_option = 0)
 
       real*8 eof(nmodes,ii,jj,2),PC(nmodes),eof_field(ii,jj,2)
@@ -48,7 +48,7 @@ C READ TIME
       call read_time(qg_file,time,t_len)
       print*,'t_len=',t_len
       
-      modes = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20/)
+      modes = (/1,2/)
       
 C READ EOF.NC  
 
@@ -90,7 +90,7 @@ C READ PC
 c      call read_pc_netcdf(pc_file,t,nmodes,PC)
 
       do m = 1,nmodes
-           call read_pc_netcdf(pc_file,t,modes(m),PC(m))
+           call read_one_pc_netcdf(pc_file,t,modes(m),PC(m)) ! changed to read_one_pc_netcdf - as opposed to reading modes(m) numbers of pcs. Hopefully will correct code
       enddo
 
 C ADD TO EOFS

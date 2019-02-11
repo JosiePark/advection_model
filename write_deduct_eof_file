@@ -1,7 +1,7 @@
 include standard_defs.mk
 
 TRANSPORT_SOURCE = $(EOF_DIR)/write_eof_deduct_field.f
-TRANSPORT_EXE = $(BUILD_DIR)/write_deduct_eof_1-20
+TRANSPORT_EXE = $(BUILD_DIR)/write_deduct_eof_1-2
 
 
 VPATH = build 
