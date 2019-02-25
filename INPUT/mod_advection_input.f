@@ -64,7 +64,7 @@ c OTHERWISE SET TO 0
      & trim(home_dir) //'TRAJ/UNIFORM_BINS/
      &EOF_trajectories_minus_1-2_eddy_new.nc'
        character*(*), parameter :: eof_file =
-     &  trim(home_dir) // 'QG/psi_minus_1-2.nc'
+     &  trim(home_dir) // 'QG/psi_minus_1-2_new.nc'
        character*(*), parameter :: pseudo_name =
      &   trim(home_dir) // 'TRAJ/UNIFORM_BINS/NEW
      &pseudo_uniform_bins_trajectories.nc' 

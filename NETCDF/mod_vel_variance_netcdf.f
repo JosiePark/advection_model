@@ -165,10 +165,7 @@ c -------------------------------------------------------------------
       retval = nf_open(file_name, nf_nowrite, ncid)                   !! Open file in read mode
       if (retval .ne. nf_noerr) call handle_err(retval)
       
-      retval = nf_inq_varid(ncid,file_name,var_varid)
-      if (retval .ne. nf_noerr) call handle_err(retval)
-      
-      retval = nf_inq_vardimid(ncid,file_name,dimid)
+      retval = nf_inq_varid(ncid,var_name,var_varid)
       if (retval .ne. nf_noerr) call handle_err(retval)
       
       start(1) = 1
