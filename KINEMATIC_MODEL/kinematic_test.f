@@ -1,4 +1,4 @@
-      program kinematic_model
+      program kinematic_test
       
       use mod_random
       use mod_kinematic_netcdf
@@ -49,7 +49,7 @@ C ------- KINEMATIC MODEL PARAMETERS --------------
       factor = 3.*pi ! width scaling
       kx = 2 ! wave number
       A = 526.1 ! amplitude of wave
-      T = 48. ! period in secs
+      T = 48. ! period in days
       lambda = float(ii)/(2*kx) ! wavelength
       c = lambda/T ! propagation speed
       y_centre = 302. ! centre in grid points
@@ -102,64 +102,18 @@ C ------ CONSTRUCT KINEMATIC FIELD --------
         if (t .eq. 1) then
         k_rec = 1
 
-C ------ RANDOMLY GENERATE PARTICLES -----------
-
-        iseed = 102
-        n = 0
-        
-        do j = 1,npoints_sqrt
-        do i = 1,npoints_sqrt
-            n = n+1
-            x0(n) = ran1(iseed)*dfloat(ii)
-            y0(n) = ran1(iseed)*dfloat(jj)
-
-        enddo
-        enddo
        call write_kinematic_field(psi_file,ii,jj,psi,k_rec,time_dim)
-       call write_kinematic_traj(traj_file,npoints
-     & ,x0,y0,dfloat(0),k_rec)
        k_rec = k_rec + 1
        else
        k_o = k_o + 1
 C ------ CALCULATE VELOCITY FIELDS AT THE GRID POINTS BY ANALYTICALLY DIFFERENTIATING ------
 
-      do n = 1,npoints
-      
-C ------ ADVECT PARTICLES ANALYTICALLY -----
-
-        call rk4_kinematic(x0(n),y0(n),t,a,factor,c,kx,y_centre,dt
-     &        ,x_diff,y_diff)
-        
-        x0(n) = x0(n) + x_diff
-        y0(n) = y0(n) + y_diff
-        
-        x_traj(n) = x_traj(n) + x_diff
-        y_traj(n) = y_traj(n) + y_diff
-        
-c ------ TREAT BOUNDARIES --------------
-
-        if (x0(n) .gt. ii) then
-            x0(n) = x0(n) - ii
-        else if (x0(n) .lt. 0) then
-            x0(n) = x0(n) + ii
-        endif
-        
-        if (y0(n) .gt. jj) then
-            y0(n) = y0(n) - jj
-        else if (y0(n) .lt. 0) then
-            y0(n) = y0(n) + jj
-        endif
-
-      enddo
       
 
 c ------- WRITE TO FILE ------------------
 
       if (k_o .eq. t_tot_day*save_time) then
         k_o = 0.
-        call write_kinematic_traj(traj_file,npoints,x_traj,y_traj
-     &   ,time_dim,
-     & k_rec)
         call write_kinematic_field(psi_file,ii,jj,psi,k_rec,time_dim)
         k_rec = k_rec + 1  
         print*,'file saved at', time_dim,'days' 
@@ -167,4 +121,4 @@ c ------- WRITE TO FILE ------------------
       endif
       enddo
 
-      end program kinematic_model
+      end program kinematic_test

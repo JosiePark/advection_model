@@ -1,0 +1,31 @@
+include standard_defs.mk
+
+KINEMATIC_SOURCE = $(KINEMATIC_DIR)/kinematic_model.f
+KINEMATIC_EXE = $(BUILD_DIR)/kinematic
+
+
+VPATH = build 
+transport: subsystem1 subsystem2 $(KINEMATIC_EXE)
+
+
+subsystem1:
+	cd $(NETCDF_DIR) && $(MAKE)
+
+subsystem2:
+	cd $(LAGR_DIR) && $(MAKE)
+
+
+$(KINEMATIC_EXE): $(KINEMATIC_SOURCE) $(BUILD_DIR)/*.o
+	$(CC) $(KINEMATIC_SOURCE) $(BUILD_DIR)/*.o -o $(KINEMATIC_EXE) $(CFLAGS) $(INCLUDES) $(LIBS) $(LINKS)
+
+
+clean: 
+	cd $(BUILD_DIR) 
+	 
+
+	
+
+
+
+
+
