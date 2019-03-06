@@ -18,7 +18,7 @@ c RELEASES PARTICLES UNIFORMLY AT DIFFERENT TIMES
       implicit none 
       
         scale = basinscale/dfloat(ii)
-        uscale = 1
+        uscale = 1.
         tscale = scale/uscale
         
 c ------ CREATE TRAJECTORY DATA FILE ----------------

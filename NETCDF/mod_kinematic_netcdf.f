@@ -181,7 +181,7 @@ c ---------------------------------------------------------------------
       
       character*(*) file_name
       integer npoints
-      real*8 x(npoints),y(npoints),time,traj(2,npoints)
+      real*8 x(npoints),y(npoints),time,traj(npoints,2)
       integer step_time
       
       integer ncid,retval,ndims
@@ -216,8 +216,8 @@ c Update data
       count(2) = 2
       count(3) = 1
       
-      traj(1,:) = x
-      traj(2,:) = y
+      traj(:,1) = x
+      traj(:,2) = y
       
       retval = nf_put_vara_double(ncid,traj_varid,start,count,traj)
       if (retval .ne. nf_noerr) call handle_err(retval)
