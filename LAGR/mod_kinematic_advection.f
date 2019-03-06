@@ -24,7 +24,7 @@
       
       !print*,'coeff1,coeff2,coeff3,coeff4 =',coeff1,coeff2,coeff3,coeff4
       u = 2*a*f*coeff1*coeff2/(coeff3*jj)
-      v = k*a*2*pi*coeff4/(coeff3*ii)
+      v = -k*a*2*pi*coeff4/(coeff3*ii)
       
       !print*,'u,v=',u,v
 
@@ -46,7 +46,7 @@ c --------------------------------------------------------------------
       real*8 pi
       real*8 scale
     
-      dt2 = dt/2.
+      dt2 = dt_nd/2.
       scale = dfloat(ii)/520.d5
       
       
@@ -56,29 +56,29 @@ c perform rk4
      & ,a,f,c,k,y_centre,u1,v1)
       !print*,'u1,v1=',u1,v1
       
-      xt = x + dt2*u1*scale
-      yt = y + dt2*v1*scale
+      xt = x + dt2*u1
+      yt = y + dt2*v1
       
       call kinematic_velocity(ii,jj,xt,yt,pi,t+dt/2.
      & ,a,f,c,k,y_centre,u2,v2)
       !print*,'u2,v2=',u2,v2
       
-      xt = x + dt2*u2*scale
-      yt = y + dt2*v2*scale
+      xt = x + dt2*u2
+      yt = y + dt2*v2
       
       call kinematic_velocity(ii,jj,xt,yt,pi,t+dt/2.
      & ,a,f,c,k,y_centre,u3,v3)
       !print*,'u3,v3=',u3,v3
       
-      xt = x + dt_nd*u3*scale
-      yt = y + dt_nd*v3*scale
+      xt = x + dt_nd*u3
+      yt = y + dt_nd*v3
       
       call kinematic_velocity(ii,jj,xt,yt,pi,t+dt
      & ,a,f,c,k,y_centre,u4,v4)
       !print*,'u4,v4=',u4,v4
       
-      x_diff = (dt/(6.))*(u1+2*(u2+u3)+u4)*scale
-      y_diff = (dt/(6.))*(v1+2*(v2+v3)+v4)*scale 
+      x_diff = (dt_nd/(6.))*(u1+2*(u2+u3)+u4)
+      y_diff = (dt_nd/(6.))*(v1+2*(v2+v3)+v4)
       
       end subroutine rk4_kinematic
       

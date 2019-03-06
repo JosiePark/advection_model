@@ -61,6 +61,8 @@ C ------- KINEMATIC MODEL PARAMETERS --------------
       c = lambda/T ! propagation speed
       y_centre = 302. ! centre in grid points
       cnd = c*2*pi/ii - pi
+      !cnd = 0.
+      !c = 0.
     
 c ------- DEFINE SPATIAL VARIABLES ----------------
 
@@ -81,6 +83,8 @@ c -------- TIME PARAMETERS -------------
       t_tot = int(max_time_secs/dt) ! total numer of time steps
       t_tot_day = int(86400/dt) ! total number of time steps per day
       dt_nondim = dt/tscale
+      print*,'dt = ',dt
+      print*,'dt_nondim = ',dt_nondim
       
 c -------- CREATE FILES ------------------
 
