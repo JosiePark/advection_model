@@ -1,9 +1,0 @@
-
-#!/bin/sh
-#PBS -N write_1-2
-#PBS -m bea
-#PBS -q standard
-
-/home/clustor2/ma/j/jp1115/CODE/BUILD/write_deduct_eof_3-4
-
-

@@ -1,9 +1,0 @@
-
-#!/bin/sh
-#PBS -N pv_diffusion_2
-#PBS -m bea
-#PBS -q standard
-
-/home/clustor2/ma/j/jp1115/CODE/BUILD/pv_diffusion_model_2
-
-
