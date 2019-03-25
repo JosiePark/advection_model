@@ -10,13 +10,18 @@
       real*8 y_centre,time_day
       real*8 basinscale,scale,uscale,tscale,dt_nondim
       real*8 time_o,time_dim,time_secs
-      integer ii,jj,k_rec
+      real*8 bin_width,u0
+      integer layer
+      integer ii,jj,k_rec,nbins
       parameter(ii = 512, jj = 512)
       parameter(max_time = 1000.)
       parameter(dt = 2160.)
       parameter(basinscale = 520.d5)
+      parameter(nbins = 10)
+      parameter(u0 = 6.d0)
+      parameter(layer = 1)
       
-      integer i,j,n,t_tot_day,iseed
+      integer i,j,n,t_tot_day,iseed,b
       
       integer npoints,npoints_sqrt
       parameter(npoints_sqrt = 50, npoints = npoints_sqrt**2)
@@ -24,27 +29,30 @@
       real*8 save_time,eps
       parameter(save_time = 1.) ! save every save_time days
       
-      real*8 x0(npoints),y0(npoints),x_traj(npoints),y_traj(npoints)
-      real*8 x_diff(npoints), y_diff(npoints)
+      real*8 x0(nbins,npoints),y0(nbins,npoints)
+     & ,x_traj(nbins,npoints),y_traj(nbins,npoints)
+      real*8 x_diff, y_diff
       real*8 u(ii,jj), v(ii,jj)
       
       character*(*),parameter :: home_dir = 
      & '/home/clustor2/ma/j/jp1115/DATA/1/'
       
       character*(*), parameter :: psi_file = 
-     &   trim(home_dir) // 'KINEMATIC/psi_eof_1-2.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/psi_bottom.nc'
       character*(*), parameter :: u_file = 
-     &   trim(home_dir) // 'KINEMATIC/u_eof_1-2.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/u_bottom.nc'
       character*(*), parameter :: v_file = 
-     &   trim(home_dir) // 'KINEMATIC/v_eof_1-2.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/v_bottom.nc'
       character*(*), parameter :: traj_file = 
-     &   trim(home_dir) // 'KINEMATIC/traj_eof_1_2.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/traj_u0_top.nc'
       character*(*), parameter :: diff_file = 
-     &   trim(home_dir) // 'KINEMATIC/diff_eof_1_2.nc' 
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/diff_bottom.nc'
       
       real*8 psi(ii,jj),x_c(ii),y_c(jj),xnd(ii),ynd(jj),cnd
       real*8 k_o
       data pi/3.14159265358979323846D0/
+      
+      print*,'Running kinematic model'
       
       scale = basinscale/dfloat(ii)
       uscale = 1.
@@ -53,14 +61,27 @@
     
 C ------- KINEMATIC MODEL PARAMETERS --------------
 
-      factor = 3.*pi ! width scaling
+      if (layer .eq. 1) then
+
+        factor = 3.*pi ! width scaling
+        A = 526.1 ! amplitude of wave
+        
+      else
+      
+        factor = 6.54
+        A = 146.27
+        
+      endif
+      
       kx = 2 ! wave number
-      A = 526.1 ! amplitude of wave
       T = 48. ! period in days
+      T = 1000
       lambda = float(ii)/(kx) ! wavelength
       c = lambda/T ! propagation speed
+      !c = 0.0001
       y_centre = 302. ! centre in grid points
-      cnd = c*2*pi/ii - pi
+      cnd = c*2*pi/ii
+      bin_width = dfloat(jj)/nbins
       !cnd = 0.
       !c = 0.
     
@@ -83,16 +104,14 @@ c -------- TIME PARAMETERS -------------
       t_tot = int(max_time_secs/dt) ! total numer of time steps
       t_tot_day = int(86400/dt) ! total number of time steps per day
       dt_nondim = dt/tscale
-      print*,'dt = ',dt
-      print*,'dt_nondim = ',dt_nondim
+
       
 c -------- CREATE FILES ------------------
 
       call create_kinematic_field(psi_file,ii,jj)
       call create_kinematic_field(u_file,ii,jj)
       call create_kinematic_field(v_file,ii,jj)
-      call create_kinematic_traj(traj_file,npoints)
-      call create_kinematic_traj(diff_file,npoints)
+      call create_kinematic_traj(traj_file,npoints,nbins)
       print*,'created files'
       
         k_o = 0.
@@ -104,8 +123,7 @@ C ------- MAIN CYCLE - ITERATE IN TIME ------------
         time_dim = time_o*tscale/86400.
         time_secs = (t-1)*dt
         time_day = time_secs/86400.
-        print*,'Time = ',time_dim
-        print*,'k_o = ',k_o/86400
+        
 C ------ CONSTRUCT KINEMATIC FIELD --------
         do i = 1,ii
         do j = 1,jj
@@ -124,20 +142,17 @@ C ------ RANDOMLY GENERATE PARTICLES -----------
 
         iseed = 102
 
+        do b = 1,nbins
         do n = 1,npoints
-            x0(n) = ran1(iseed)*dfloat(ii)
-            y0(n) = ran1(iseed)*dfloat(jj)
+            x0(b,n) = ran1(iseed)*dfloat(jj)
+            y0(b,n) = ran1(iseed)*bin_width + (b-1)*bin_width
             !y0(n) = 310.
-            x_traj(n) = x0(n)
-            y_traj(n) = y0(n)
-            x_diff(n) = 0.
-            y_diff(n) = 0.
-
+            x_traj(b,n) = x0(b,n)
+            y_traj(b,n) = y0(b,n)
         enddo
-       call write_kinematic_traj(traj_file,npoints
+        enddo
+       call write_kinematic_traj(traj_file,npoints,nbins
      & ,x0,y0,dfloat(0),k_rec)
-       call write_kinematic_traj(diff_file,npoints
-     & ,x_diff,y_diff,dfloat(0),k_rec)
        call write_kinematic_field(psi_file,ii,jj,psi,k_rec,time_dim)
        call write_kinematic_field(u_file,ii,jj,u,k_rec,time_dim)
        call write_kinematic_field(v_file,ii,jj,v,k_rec,time_dim)
@@ -148,38 +163,37 @@ C ------ RANDOMLY GENERATE PARTICLES -----------
        k_o = k_o + 1
 C ------ CALCULATE VELOCITY FIELDS AT THE GRID POINTS BY ANALYTICALLY DIFFERENTIATING ------
 
+       do b = 1,nbins
        do n = 1,npoints
        !print*,'n=',n
       
 C ------ ADVECT PARTICLES ANALYTICALLY -----
 
-        call rk4_kinematic(ii,jj,x0(n),y0(n),pi
-     &   ,time_secs,a,factor,cnd,kx,y_centre,dt,dt_nondim
-     &        ,x_diff(n),y_diff(n)) ! t is not correct input, need input in days
+        call rk4_kinematic(ii,jj,x0(b,n),y0(b,n),pi
+     &   ,time_secs,u0,a,factor,cnd,kx,y_centre,dt,dt_nondim
+     &        ,x_diff,y_diff) 
         
-        x0(n) = x0(n) + x_diff(n)
-        y0(n) = y0(n) + y_diff(n)
+        x0(b,n) = x0(b,n) + x_diff
+        y0(b,n) = y0(b,n) + y_diff
         
-        x_traj(n) = x_traj(n) + x_diff(n)
-        y_traj(n) = y_traj(n) + y_diff(n)
-        !print*,'x_traj(n) = ',n,x_traj(n)
-        !print*,'y_traj(n) = ',n,y_traj(n)
-        !print*,'x_diff,y_diff = ',x_diff(n),y_diff(n)
-        !print*,'x_traj,y_traj = ',x_traj,y_traj
+        x_traj(b,n) = x_traj(b,n) + x_diff
+        y_traj(b,n) = y_traj(b,n) + y_diff
+
 c ------ TREAT BOUNDARIES --------------
 
-        if (x0(n) .gt. ii) then
-            x0(n) = x0(n) - ii
-        else if (x0(n) .lt. 0) then
-            x0(n) = x0(n) + ii
+        if (x0(b,n) .gt. ii) then
+            x0(b,n) = x0(b,n) - ii
+        else if (x0(b,n) .lt. 0) then
+            x0(b,n) = x0(b,n) + ii
         endif
         
-        if (y0(n) .gt. jj) then
-            y0(n) = y0(n) - jj
-        else if (y0(n) .lt. 0) then
-            y0(n) = y0(n) + jj
+        if (y0(b,n) .gt. jj) then
+            y0(b,n) = y0(b,n) - jj
+        else if (y0(b,n) .lt. 0) then
+            y0(b,n) = y0(b,n) + jj
         endif
 
+      enddo
       enddo
       
 
@@ -187,10 +201,7 @@ c ------- WRITE TO FILE ------------------
 
       if (k_o .eq. t_tot_day*save_time) then
         k_o = 0.
-        call write_kinematic_traj(traj_file,npoints,x_traj,y_traj
-     &   ,time_dim,
-     & k_rec)
-        call write_kinematic_traj(diff_file,npoints,x_diff,y_diff
+        call write_kinematic_traj(traj_file,npoints,nbins,x_traj,y_traj
      &   ,time_dim,
      & k_rec)
       call write_kinematic_field(psi_file,ii,jj,psi,k_rec,time_dim)

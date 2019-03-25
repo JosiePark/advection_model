@@ -1,5 +1,7 @@
       module stochastic_parameters
       
+      use mod_2dcubic
+      
       contains
       
       subroutine lagrangian_velocity(x,dt,npoints,nt,i,u)
@@ -17,12 +19,12 @@
       
 c -----------------------------------------------------------------------------
 
-      subroutine velocity_variance(u,npoints,nt,i,j,sigma)
+      subroutine lagrangian_velocity_variance(u,npoints,nt,i,j,sigma)
       
       implicit none
       
       integer npoints,nt,n,i,j
-      real*8 x(2,npoints,nt),sigma(npoints),u(2,npoints,nt)
+      real*8 x(2,npoints,nt),sigma(2,2,npoints),u(2,npoints,nt)
       
       do n = 1,npoints
         sigma = DOT_PRODUCT(u(i,n,:),u(j,n,:))
@@ -50,7 +52,7 @@ c -----------------------------------------------------------------------------
       
       ! calculate velocity variance
       
-      call velocity_variance(u,npoints,nt,i,j,sigma)
+      call lagrangian_velocity_variance(u,npoints,nt,i,j,sigma)
       
       ! calculate non-normalised autocorrelation
       
@@ -71,85 +73,79 @@ c -----------------------------------------------------------------------------
       
 c -----------------------------------------------------------------------------
 
-      subroutine drift_correction_1(x_new,x_old,npoints,i,a)
+      subroutine random_forcing_1(sigma,asigma,bisgma,csigma,dsigma
+     & ,theta,ii,jj,nbins,b)
       
       implicit none
       
-      integer nt,npoints,i
-      real*8 sigma(2,2,npoints),theta(npoints),a1_drift(npoints)
-      real*8 x(2,npoints,nt),u(2,npoints,nt-1)
+      integer ii,jj,k,m,j
+      real*8 sigma(2,2,ii,jj),theta(nbins,2,2),b(ii,jj,2,2)
+      real*8 asigma(2,2,ii,jj),bsigma(2,2,ii,jj)
+     & ,csigma(2,2,ii,jj),dsigma(2,2,ii,jj)
+      real*8 theta_interp(jj,2,2)
       
-      integer d,m,j,k
+      ! Interpolate theta meridionally
       
-      a = 0.
-      
-      do d = 1,2
-        call lagrangian_velocity(x_new,dt,npoints,nt,d,u(d,:,:))
-        call lagrangian_velocity(
-      enddo
-      
-      do m = 1,2
-      do j = 1,2
-        call velocity_variance(u,npoints,nt,m,j,sigma(m,j,:))
-      enddo
-      enddo
-      
-      ! calculate the first term
-      do m = 1,2
-        a = a + .5*(sigma(i,m)
-      enddo
-      
-      do m = 1,2
-      do j = 1,2
       do k = 1,2
-      
+      do m = 1,2
+      do j = 1,jj
+        call diffusivity_interp_1d(bin_centres,nbins,theta(:,k,m)
+     &   ,ii,j,theta_interp(j,k,m)
       enddo
       enddo
       enddo
       
       
+      ! first calculate b11,b22
       
       
-      end subroutine drift_correction_1
       
-c -----------------------------------------------------------------------------
-
-      subroutine random_forcing_1
+      
       
       end subroutine random_forcing_1
       
 c -----------------------------------------------------------------------------
-      
-      subroutine markov1_tensor(x,dt,npoints,nt,ntau,i,j,theta)
-      
-      implicit none
-      
-      integer npoints,nt,t,n
-      real*8 R(ntau),x(2,npoints,nt),theta(npoints)
-      
-      ! calculate autocorrelation
-      
-      call autocorrelation(x,dt,npoints,nt,ntau,i,j,R)
-      
-      ! find when R reaches zero
-      
-      do n = 1,npoints
-      do t = 1,ntau
-        if (R(n,t) <=0) then 
-            theta(n) = t
-            break
-        endif
-      enddo
-      enddo
-      
-      end subroutine markov1_tensor
-      
-c -----------------------------------------------------------------------------
 
-
-      
-      
-      
+      subroutine variance_derivative(sigma,ii,jj,dsigma)
     
+c i,j denotes coordinate of velocity variance tensor
+c k denotes which component of the derivative you wish to differentiate
+c sigma with respect to.
+
+      implicit none
+            
+      integer ii,jj,i,j,k
+      real*8 sigma(2,2,ii,jj),dsigma(2,2,2,ii,jj)
       
+      integer ix,iy,im1,ip1,jm1,jp1
+      
+      do ix = 1,ii
+      do iy = 1,jj
+      
+            im1=ix-1
+            ip1=ix+1
+            jm1=iy-1
+            jp1=iy+1
+            if(im1.eq.0)    im1=ii
+            if(ip1.eq.ii+1) ip1=1
+            if(jm1.eq.0)    jm1=jj
+            if(jp1.eq.jj+1) jp1=1
+            
+            do i = 1,2
+            do j = 1,2
+                dsigma(i,j,1,ix,iy) = 
+     &                .5*(sigma(i,j,ip1,iy)-sigma(i,j,im1,iy))
+                dsigma(i,j,2,ix,iy) = 
+     &                .5*(sigma(i,j,ix,jp1)-sigma(i,j,ix,jm1))
+            enddo
+            enddo
+
+
+      enddo
+      enddo
+      
+      
+      
+      end subroutine variance_derivative
+
       end module stochastic_parameters

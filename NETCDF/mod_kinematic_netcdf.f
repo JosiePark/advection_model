@@ -108,29 +108,31 @@ c ---------------------------------------------------------------------
       
 c ---------------------------------------------------------------------
 
-      subroutine create_kinematic_traj(file_name,npoints)
+      subroutine create_kinematic_traj(file_name,npoints,nbins)
       
       implicit none
       include 'netcdf.inc'
       
       character*(*) file_name
-      integer npoints
+      integer npoints,nbins
       
       integer ncid,retval
       
 c Dimension IDs
 
-      integer t_dimid, p_dimid, loc_dimid, rec_dimid
+      integer t_dimid, p_dimid, loc_dimid, rec_dimid,bin_dimid
       integer t_varid, traj_varid
       character*(*) t_name, p_name, loc_name, traj_name, rec_name
+      character*(*) bin_name
       parameter(t_name = 'Time (days)')
       parameter(p_name = 'Particle Number')
       parameter(loc_name = 'Location of Particle')
       parameter(rec_name = 'Time')
       parameter(traj_name = 'Trajectories')
+      parameter(bin_name = 'Bin')
       
       integer ndims
-      parameter(ndims = 3)
+      parameter(ndims = 4)
       integer dimid(ndims)
       
 c create NETCDF file
@@ -140,6 +142,9 @@ c create NETCDF file
       
 c Define Dimensions
 
+      retval = nf_def_dim(ncid,bin_name,nbins,bin_dimid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      
       retval = nf_def_dim(ncid,p_name,npoints,p_dimid)
       if (retval .ne. nf_noerr) call handle_err(retval)
       
@@ -151,9 +156,10 @@ c Define Dimensions
       
 c Define Variables
 
-      dimid(1) = p_dimid
-      dimid(2) = loc_dimid
-      dimid(3) = rec_dimid
+      dimid(1) = bin_dimid
+      dimid(2) = p_dimid
+      dimid(3) = loc_dimid
+      dimid(4) = rec_dimid
 
       retval = nf_def_var(ncid,traj_name,nf_double
      & ,ndims,dimid,traj_varid)
@@ -173,19 +179,20 @@ c Define Variables
       
 c ---------------------------------------------------------------------
 
-      subroutine write_kinematic_traj(file_name,npoints,x,y,time
+      subroutine write_kinematic_traj(file_name,npoints,nbins,x,y,time
      & ,step_time)
       
       implicit none
       include 'netcdf.inc'
       
       character*(*) file_name
-      integer npoints
-      real*8 x(npoints),y(npoints),time,traj(npoints,2)
+      integer npoints,nbins
+      real*8 x(nbins,npoints),y(nbins,npoints),time
+     & ,traj(nbins,npoints,2)
       integer step_time
       
       integer ncid,retval,ndims
-      parameter(ndims = 3)
+      parameter(ndims = 4)
       integer dimid(ndims)
       
       integer traj_varid,t_varid
@@ -211,13 +218,15 @@ c Update data
 
       start(1) = 1
       start(2) = 1
-      start(3) = step_time
-      count(1) = npoints
-      count(2) = 2
-      count(3) = 1
+      start(3) = 1
+      start(4) = step_time
+      count(1) = nbins
+      count(2) = npoints
+      count(3) = 2
+      count(4) = 1
       
-      traj(:,1) = x
-      traj(:,2) = y
+      traj(:,:,1) = x
+      traj(:,:,2) = y
       
       retval = nf_put_vara_double(ncid,traj_varid,start,count,traj)
       if (retval .ne. nf_noerr) call handle_err(retval)
@@ -228,7 +237,7 @@ c Update data
       retval = nf_close(ncid)
       if (retval .ne. nf_noerr) call handle_err(retval)
       
-      print*,'NETCDF file created', file_name   
+      print*,'NETCDF file edited', file_name   
       
       end subroutine write_kinematic_traj
       
