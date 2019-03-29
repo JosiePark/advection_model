@@ -168,6 +168,27 @@ c subroutine that returns the value of psi approximated at the interpolation poi
 c -----------------------------------------------------------------------------------------------
 c -----------------------------------------------------------------------------------------------
 
+c subroutine that takes the cubic coefficients a,b,c,d to calculte the interpolated value at x,y
+c can be used for any variable defined on the grid ii x jj
+
+        subroutine cubic_interp_full(ii,jj,a,b,c,d,x,y,f)
+        
+        implicit none
+        
+        integer ii,jj
+        real*8 a(ii,jj),b(ii,jj),c(ii,jj),d(ii,jj)
+        real*8 x,y
+        real*8 f,f_x(4)
+        
+        call cubic_poly_x(ii,jj,x,y,a,b,c,d,f_x)
+        call cubic_interp(ii,jj,f_x,y,f)
+        
+        
+        
+        end subroutine cubic_interp_full
+c -----------------------------------------------------------------------------------------------
+c -----------------------------------------------------------------------------------------------
+
 c subroutine that returns the velocities given the coefficients
 
         subroutine vel(ii,jj,psi_x,a,b,c,d,x,y,u,v) !add a,b,c,d as input when incorporating in final code

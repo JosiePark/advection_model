@@ -20,7 +20,7 @@
       parameter(basinscale = 520.d5)
       parameter(nbins = 10)
       parameter(u0 = 0.d0)
-      parameter(layer = 1)
+      parameter(layer = 2)
       
       integer i,j,n,t_tot_day,iseed,b,k
       
@@ -45,7 +45,7 @@
       character*(*), parameter :: v_file = 
      &   trim(home_dir) // 'TRAJ/KINEMATIC/v_bottom.nc'
       character*(*), parameter :: traj_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/traj_top_smallc.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/traj_bottom_c1.nc'
       character*(*), parameter :: diff_file = 
      &   trim(home_dir) // 'TRAJ/KINEMATIC/diff_bottom.nc'
       
@@ -78,7 +78,7 @@ C ------- KINEMATIC MODEL PARAMETERS --------------
       T = 48. ! period in days
       lambda = float(ii)/(kx) ! wavelength
       !c = lambda/T ! propagation speed
-      c = 0.01
+      c = 1.
       y_centre = 302. ! centre in grid points
       cnd = c*2*pi/ii
       bin_width = dfloat(jj)/nbins
