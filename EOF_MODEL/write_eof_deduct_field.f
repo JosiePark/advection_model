@@ -21,7 +21,7 @@ c NAME FILES
       character*(*), parameter :: pc_file =
      &  trim(home_dir) // 'STATS/EOF/pc.nc'
       character*(*), parameter :: new_file = 
-     &   trim(home_dir) // 'QG/eof_3-4.nc'
+     &   trim(home_dir) // 'QG/eof_1-10.nc'
       
 c TIME VARIABLES
       integer t_len
@@ -32,7 +32,7 @@ c TIME VARIABLES
 c EOF VARIABLES
 
       integer nmodes,ii,jj
-      parameter(nmodes = 2,ii=512,jj=512)
+      parameter(nmodes = 10,ii=512,jj=512)
       parameter(eof_option = 1)
 
       real*8 eof(nmodes,ii,jj,2),PC(nmodes),eof_field(ii,jj,2)
@@ -48,7 +48,7 @@ C READ TIME
       call read_time(qg_file,time,t_len)
       print*,'t_len=',t_len
       
-      modes = (/3,4/)
+      modes = (/1,2,3,4,5,6,7,8,9,10/)
       
 C READ EOF.NC  
 
