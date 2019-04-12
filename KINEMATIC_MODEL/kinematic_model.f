@@ -11,7 +11,7 @@
       real*8 basinscale,scale,uscale,tscale,dt_nondim
       real*8 time_o,time_dim,time_secs
       real*8 bin_width,u0
-      integer layer
+      integer layer,regime
       integer ii,jj,k_rec,nbins
       parameter(ii = 512, jj = 512)
       parameter(max_time = 1000)
@@ -20,7 +20,8 @@
       parameter(basinscale = 520.d5)
       parameter(nbins = 10)
       parameter(u0 = 0.d0)
-      parameter(layer = 2)
+      parameter(layer = 1)
+      parameter(regime = 2)
       
       integer i,j,n,t_tot_day,iseed,b,k
       
@@ -36,18 +37,18 @@
       real*8 u(ii,jj), v(ii,jj)
       
       character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
       
       character*(*), parameter :: psi_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/psi_bottom.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/psi_top.nc'
       character*(*), parameter :: u_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/u_bottom.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/u_top.nc'
       character*(*), parameter :: v_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/v_bottom.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/v_top.nc'
       character*(*), parameter :: traj_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/traj_bottom_c1.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/traj_top.nc'
       character*(*), parameter :: diff_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/diff_bottom.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/diff_top.nc'
       
       real*8 psi(ii,jj),x_c(ii),y_c(jj),xnd(ii),ynd(jj),cnd
       real*8 k_o
@@ -62,24 +63,50 @@
     
 C ------- KINEMATIC MODEL PARAMETERS --------------
 
-      if (layer .eq. 1) then
+      if (regime .eq. 1) then
 
-        factor = 3.*pi ! width scaling
-        A = 526.1 ! amplitude of wave
+          if (layer .eq. 1) then
+
+            factor = 3.*pi ! width scaling
+            A = 526.1 ! amplitude of wave
+            
+          else
+          
+            factor = 6.54
+            A = 146.27
         
-      else
+          endif
+          
+      elseif (regime .eq. 2) then
       
-        factor = 6.54
-        A = 146.27
+          if (layer .eq. 1) then
+
+            factor = 7.393939 ! width scaling
+            A = 609.8531 ! amplitude of wave
+            
+          else
+          
+            factor = 6.54
+            A = 146.27
         
+          endif
+      
       endif
       
       kx = 2 ! wave number
-      T = 48. ! period in days
+      if (regime .eq. 1) then
+       T = 48. ! period in days
+      else
+       T = 44.
+      endif
       lambda = float(ii)/(kx) ! wavelength
-      !c = lambda/T ! propagation speed
-      c = 1.
-      y_centre = 302. ! centre in grid points
+      c = lambda/T ! propagation speed
+      !c = 1.
+      if (regime .eq. 1) then
+       y_centre = 302. ! centre in grid points
+      else
+       y_centre = 278.
+      endif
       cnd = c*2*pi/ii
       bin_width = dfloat(jj)/nbins
       !cnd = 0.

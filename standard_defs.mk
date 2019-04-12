@@ -1,7 +1,8 @@
 
-CFLAGS = -C -g -traceback -O2 -heap-arrays -check all -fp-stack-check # -g -traceback -check all -fp-stack-check -mcmodel=large
+#CFLAGS = -C -g -traceback -O2 -heap-arrays -check all -fp-stack-check # -g -traceback -check all -fp-stack-check -mcmodel=large
 #NETCDF_VERSION=4.3.3
 CC = ifort
+CFLAGS = -heap-arrays
 
 #LIBS = -L${MKL_HOME}/interfaces/fftw3xf -L/apps/netcdf/$(NETCDF_VERSION)/lib -L${MKL_HOME}/interfaces
 #LINKS = -lfftw3xf_intel -lnetcdff -lnetcdf -llapack  -lblas

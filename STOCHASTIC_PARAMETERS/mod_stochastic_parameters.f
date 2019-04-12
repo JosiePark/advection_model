@@ -141,5 +141,82 @@ c -----------------------------------------------------------------------------
       
       
       end subroutine variance_derivative
+      
+c -----------------------------------------------------------------------------
+
+      subroutine sigma_interpolation(ii,jj,a,b,c,d,k,x,y,sigma,dsigma)
+      
+      implicit none
+      
+      integer ii,jj
+      real*8 a(ii,jj),b(ii,jj),c(ii,jj),d(ii,jj)
+      real*8 x,y
+      real*8 sigma,dsigma
+      real*8 sigma_x(4)
+      real*8 alpha,beta,gamma,delta
+      real*8 d_alpha,d_beta,d_gamma,d_delta
+      real*8 ay,ax
+      integer yc,xc
+      integer i,j,jc(4)
+      integer k
+
+      ay = y - int(y)
+      yc = int(y) + 1
+  
+      xc = int(x) + 1
+    
+      ax = x - int(x)
+        
+        do i = 1,4
+            jc(i) = yc - 2 + i
+            if (jc(i) <= 0) then
+            jc(i) = jj + jc(i)
+            elseif (jc(i) > jj) then
+            jc(i) = jc(i) - jj
+            endif
+ 
+        enddo
+      call cubic_poly_x(ii,jj,x,y,a,b,c,d
+     & ,sigma_x)
+      call cubic_coeff_y(ii,jj,sigma_x,alpha,beta,gamma,delta)
+      
+      sigma = alpha + beta*ay + gamma*ay**2 
+     &    + delta*ay**3
+        
+        if (k .eq. 1) then
+        dsigma = -(beta + 2*gamma*ay + 3*delta*ay**2)
+        
+        else
+        
+        d_alpha = b(xc,jc(2))
+     &    + 2*c(xc,jc(2))*ax + 3*d(xc,jc(2))*ax**2
+        
+        d_beta = (-b(xc,jc(1))/3 - b(xc,jc(2))/2
+     &    + b(xc,jc(3))-b(xc,jc(4))/6)
+     & + 2*(-c(xc,jc(1))/3 - c(xc,jc(2))/2 
+     & + c(xc,jc(3)) - c(xc,jc(4))/6)*ax
+     & + 3*(-d(xc,jc(1))/3 - d(xc,jc(2))/2
+     & + d(xc,jc(3)) - d(xc,jc(4))/6)*ax**2
+     
+        d_gamma = (b(xc,jc(1))/2 - b(xc,jc(2)) + b(xc,jc(3))/2)
+     & + 2*(c(xc,jc(1))/2 - c(xc,jc(2)) + c(xc,jc(3))/2)*ax
+     & + 3*(d(xc,jc(1))/2 - d(xc,jc(2)) + d(xc,jc(3))/2)*ax**2
+                                                                                                             
+        d_delta = (-b(xc,jc(1))/6 + b(xc,jc(2))/2 
+     &   - b(xc,jc(3))/2 + b(xc,jc(4))/6)
+     & + 2*(-c(xc,jc(1))/6 + c(xc,jc(2))/2
+     & - c(xc,jc(3))/2 + c(xc,jc(4))/6)*ax
+     & + 3*(-d(xc,jc(1))/6 + d(xc,jc(2))/2
+     & - d(xc,jc(3))/2 + d(xc,jc(4))/6)*ax**2
+
+     
+        dsigma= (d_alpha + ay*d_beta + d_gamma*ay**2 + d_delta*ay**3)
+        
+        endif
+        
+        
+      
+      end subroutine sigma_interpolation
+      
 
       end module mod_stochastic_parameters

@@ -30,7 +30,7 @@ C TRANSPORT MODEL PARAMETERS
       parameter(npoints=5000)
       parameter(isolve=1 ! if isolve = 0 :bicubic, if isolve = 1 :2Dcubic, is isolve = 2: old non-divergent preserving cubic method
      & ,i_eddy=0
-     & ,i_pseudo=1
+     & ,i_pseudo=0
      & ,i_full=0
      & ,release_interval = 200.
      & ,release_length = 1000.
@@ -56,15 +56,15 @@ c OTHERWISE SET TO 0
      &   trim(home_dir) // 'QG/QG_ave.nc'
        character*(*), parameter :: full_traj_file =
      &   trim(home_dir) // 'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_1-10_full.nc'  
+     &EOF_trajectories_1-20_full.nc'  
        character*(*), parameter :: traj_file =
      &  trim(home_dir) // 'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_1-10_pseudo.nc'
+     &EOF_trajectories_1-20_pseudo.nc'
         character*(*), parameter :: eddy_traj_file =
      & trim(home_dir) //'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_1-10_eddy.nc'
+     &EOF_trajectories_1-20_eddy.nc'
        character*(*), parameter :: eof_file =
-     &  trim(home_dir) // 'QG/eof_1-10.nc'
+     &  trim(home_dir) // 'QG/eof_1-20.nc'
        character*(*), parameter :: pseudo_name =
      &   trim(home_dir) // 'TRAJ/UNIFORM_BINS/NEW
      &pseudo_uniform_bins_trajectories.nc' 

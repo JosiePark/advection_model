@@ -11,7 +11,7 @@
       
       character*(*) file_name
       integer nbins
-      real*8 theta(nbins,2,2)
+      real*8 theta(2,2,nbins)
       
       character*(*) theta_name,bin_name,layer_name,dim_name
       parameter(theta_name = 'Theta')
@@ -35,9 +35,9 @@
       start(1) = 1
       start(2) = 1
       start(3) = 1
-      count(1) = nbins
+      count(1) = 2
       count(2) = 2
-      count(3) = 2
+      count(3) = nbins
       
       retval = nf_get_vara_double(ncid,theta_varid,start,count,theta)
       if (retval .ne. nf_noerr) call handle_err(retval)
