@@ -16,11 +16,11 @@
       character*(*), parameter :: ave_file = 
      &   trim(home_dir) // 'QG/QG_ave.nc'
       character*(*), parameter :: theta_file = 
-     &   trim(home_dir) // 'STATS/THETA/theta-1.nc'
+     &   trim(home_dir) // 'STATS/THETA/theta.nc'
       character*(*), parameter :: sigma_file = 
      &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'
       character*(*), parameter :: file_name =
-     &   trim(home_dir) // 'TRAJ/DIFFUSION/markov1.nc' 
+     &   trim(home_dir) // 'TRAJ/DIFFUSION/markov1_new.nc' 
       character*(*), parameter :: d_sigma_file =
      &   trim(home_dir) // 'TRAJ/DIFFUSION/d_sigma.nc' 
       character*(*), parameter :: d_invsigma_file =
@@ -96,10 +96,12 @@
       real*8 dt
       real*8 max_run
       parameter(max_run = 1000.)
-      parameter(dt = 360.)
+      !parameter(max_run = 1.)
+      parameter(dt = 2160.)
       
-      real*8 scale,basinscale,uscale,tscale,dt_nondim,ufluc
+      real*8 scale,basinscale,uscale,tscale,dt_nondim,ufluc,U0
       parameter(basinscale = 520.d5)
+      parameter(U0 = 6.d0)
       
       real*8, allocatable, dimension(:) :: time
       
@@ -144,8 +146,8 @@ c 1. Markov-1 time tensor (defined for each bin, read from file)
       
 c 2. Velocity variance (read from file) 
       call read_vel_variance(sigma_file,tmp1,tmp2,ii,jj)
-      sigma11 = tmp1(1,1,:,:)
-      sigma12 = tmp1(2,2,:,:)
+      sigma11 = tmp1(1,1,:,:) ! top layer - zonal
+      sigma12 = tmp1(2,2,:,:) ! top layer - meridional
       sigma21 = tmp2(1,1,:,:)
       sigma22 = tmp2(2,2,:,:)
       
@@ -250,6 +252,7 @@ C GENERATE RANDOM LAGRANGIAN PARTICLES
       enddo
       enddo
       
+      
 c WRITE INITIAL POSITIONS TO FILE
 
       call create_diffusion_trajfile(file_name,npoints,nbins)
@@ -265,8 +268,7 @@ c WRITE INITIAL POSITIONS TO FILE
 c DETERMINE TIME ARRAY
 
       t_len  = int((max_run*86400.)/dt) ! number of time steps
-      allocate(time(t_len))
-      
+      allocate(time(t_len))      
     
       time(1) = 0.
       k_s = 0.
@@ -284,9 +286,8 @@ C NON DIMENSIONALISE TIME
       theta21 = theta(2,1,:)*86400./tscale
       theta22 = theta(2,2,:)*86400./tscale
       
-      print*,'theta11 = ',theta11
-      
-c DETERMINE INITIAL CONDITIONS, I.E WHAT IS u'? set to 0 to test
+c DETERMINE INITIAL CONDITIONS, 
+C u' IS INITIALISED AS A GAUSSIAN RANDOM VARIABLE WITH ZERO MEAN AND VARIANCE SIGMA MEAN
 
       sum_tmp = 0.
       do i = 1,ii
@@ -329,6 +330,7 @@ c DETERMINE INITIAL CONDITIONS, I.E WHAT IS u'? set to 0 to test
         u2_fluc_old(2,n,b) = random_normal()*dsqrt(sigma22_mean)        
       enddo
       enddo
+      
 
 C MAIN CYCLE
 
@@ -336,9 +338,9 @@ C MAIN CYCLE
 
             time(t) = time(t-1) + dt/86400. ! time in days
             k_s = k_s + dt/86400.
-            print*,'k_s =',k_s
+            !print*,'k_s =',k_s
             
-      print*,'time =',time(t)
+      !print*,'time =',time(t)
       
       do b = 1,nbins
       do n = 1,npoints
@@ -364,6 +366,9 @@ C DETERMINE DRIFT CORRECTION TERM
      & ,x2(n,b),y2(n,b),sigma22_tmp,d_sigma22_tmp)
      
       !print*,'sigma,dsigma=',sigma11_tmp,d_sigma11_tmp
+      !print*,'sigma,dsigma=',sigma12_tmp,d_sigma12_tmp
+      !print*,'sigma,dsigma=',sigma21_tmp,d_sigma21_tmp
+      !print*,'sigma,dsigma=',sigma22_tmp,d_sigma22_tmp
      
       ! theta
       
@@ -376,8 +381,6 @@ C DETERMINE DRIFT CORRECTION TERM
       call diffusivity_interp_1d(bin_centres,nbins,theta22
      &   ,ii,y2(n,b),theta22_tmp)
      
-      !print*,'theta11_tmp = ',theta11_tmp
-     
       ! random forcing 
       
       b11_tmp = sqrt(2*sigma11_tmp/theta11_tmp)
@@ -385,11 +388,6 @@ C DETERMINE DRIFT CORRECTION TERM
       b22_tmp = sqrt(2*sigma22_tmp/theta22_tmp)
       b21_tmp = sqrt(2*sigma21_tmp/theta21_tmp)
       
-      !print*,'b11=',b11_tmp
-      
-      
-      ! mean velocity 
-    
       
       call cubic_poly_x(ii,jj,x1(n,b),y1(n,b)
      & ,a1,b1,c1,d1,psi1_x)
@@ -399,27 +397,37 @@ C DETERMINE DRIFT CORRECTION TERM
       call vel(ii,jj,psi1_x,a1,b1,c1,d1,x1(n,b),y1(n,b),u1,v1)    
       call vel(ii,jj,psi2_x,a2,b2,c2,d2,x2(n,b),y2(n,b),u2,v2) 
       
-      u_top(1) = u1
+      u_top(1) = u1 + u0
       u_top(2) = v1
       u_bottom(1) = u2
       u_bottom(2) = v2
       
       ! calculate drift correction term
       
-        drift11 = .5*d_sigma11_tmp*(u1_fluc_old(1,n,b)
-     &   *(u_top(1) + 2*u1_fluc_old(1,n,b))/sigma11_tmp + 1)
-        drift12 = .5*d_sigma12_tmp*(u1_fluc_old(2,n,b)
-     &   *(u_top(2) + 2*u1_fluc_old(2,n,b))/sigma12_tmp + 1)
-        drift21 = .5*d_sigma21_tmp*(u2_fluc_old(1,n,b)
-     &   *(u_bottom(1) + 2*u2_fluc_old(1,n,b))/sigma21_tmp + 1)
-        drift22 = .5*d_sigma22_tmp*(u2_fluc_old(2,n,b)
-     &   *(u_bottom(2) + 2*u2_fluc_old(2,n,b))/sigma22_tmp + 1)
+c        drift11 = .5*d_sigma11_tmp*(u1_fluc_old(1,n,b)
+c     &   *(u_top(1) + 2*u1_fluc_old(1,n,b))/sigma11_tmp + 1)
+c        drift12 = .5*d_sigma12_tmp*(u1_fluc_old(2,n,b)
+c     &   *(u_top(2) + 2*u1_fluc_old(2,n,b))/sigma12_tmp + 1)
+c        drift21 = .5*d_sigma21_tmp*(u2_fluc_old(1,n,b)
+c     &   *(u_bottom(1) + 2*u2_fluc_old(1,n,b))/sigma21_tmp + 1)
+c        drift22 = .5*d_sigma22_tmp*(u2_fluc_old(2,n,b)
+c     &   *(u_bottom(2) + 2*u2_fluc_old(2,n,b))/sigma22_tmp + 1)
 
-c        drift11 = .5*(1+u1_old_fluc(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
-c        drift11 = .5*(1+u1_old_fluc(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
-     
-        !print*,'drift11 = ',drift11
-      
+
+       drift11 = .5*(1+u1_fluc_old(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
+       drift12 = .5*(1+u1_fluc_old(2,n,b)**2/sigma12_tmp)*d_sigma12_tmp
+       drift21 = .5*(1+u2_fluc_old(1,n,b)**2/sigma21_tmp)*d_sigma21_tmp
+       drift22 = .5*(1+u2_fluc_old(2,n,b)**2/sigma22_tmp)*d_sigma22_tmp
+
+c       drift11 = d_sigma11_tmp
+c       drift12 = d_sigma12_tmp
+c       drift21 = d_sigma21_tmp
+c       drift22 = d_sigma22_tmp
+   
+c       drift11 = 0.
+c       drift12 = 0.
+c       drift21 = 0.
+c       drift22 = 0.
       
       ! update velocity fluctuation
       
@@ -445,16 +453,23 @@ c        drift11 = .5*(1+u1_old_fluc(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
      
       !print*,'u1_fluc =',u1_fluc_new(1,n,b)
       !print*,'u1_mean=',u_top(1)
+      
+       !print*,'theta,a,b=',theta11_tmp,drift11,b11_tmp
+       !print*,'u1_old,u1_new=',u1_fluc_old(1,n,b),u1_fluc_new(1,n,b)
+       !print*,'x1_old,y1_old =', x1(n,b),y1(n,b)
+       
      
 
       ! update particle location
       
-      x1(n,b) = x1(n,b) + dt_nondim*(u1_fluc_new(1,n,b) + u1)
+      x1(n,b) = x1(n,b) + dt_nondim*(u1_fluc_new(1,n,b) + u1+u0)
       x2(n,b) = x2(n,b) + dt_nondim*(u2_fluc_new(1,n,b) + u2)
       y1(n,b) = y1(n,b) + dt_nondim*(u1_fluc_new(2,n,b) + v1)
       y2(n,b) = y2(n,b) + dt_nondim*(u2_fluc_new(2,n,b) + v2)
       
-      x1_traj(n,b) = x1_traj(n,b) + dt_nondim*(u1_fluc_new(1,n,b) + u1)
+      print*,'x1_new,y1_new =',x1(n,b),y1(n,b)
+      
+      x1_traj(n,b) = x1_traj(n,b) + dt_nondim*(u1_fluc_new(1,n,b)+u1+u0)
       x2_traj(n,b) = x2_traj(n,b) + dt_nondim*(u2_fluc_new(1,n,b) + u2)
       y1_traj(n,b) = y1_traj(n,b) + dt_nondim*(u1_fluc_new(2,n,b) + v1)
       y2_traj(n,b) = y2_traj(n,b) + dt_nondim*(u2_fluc_new(2,n,b) + v2)
@@ -490,6 +505,8 @@ c        drift11 = .5*(1+u1_old_fluc(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
             if ((x1(n,b).le.0) .or. (x1(n,b) .ge. ii)) then
                 print*,'x1(n,b) = ',x1(n,b)
                 print*,'u1 = ',u1_fluc_new(1,n,b)
+                print*,theta11_tmp,d_sigma11_tmp
+     &                ,sigma11_tmp,drift11,b11_tmp,u_top(1)
                 stop
             endif
             if ((x2(n,b).le.0) .or. (x2(n,b) .ge. ii)) then

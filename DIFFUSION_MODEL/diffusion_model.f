@@ -111,17 +111,10 @@ C MAIN CYCLE
             
             time(t) = time(t-1) + dt/86400. ! time in days
             k_s = k_s + dt/86400.
-            !print*,'time = ',time(t)
-            !print*,'k_s =', k_s
-      
+ 
             do b = 1,nbins
             do n = 1,npoints
-            
-                  !print*,'y1,y2=',y1(n,b),y2(n,b)
-            
-            
-            
-      
+
 C SPATIALLY INTERPOLATE TO FIND TIME-AVERAGED VELOCITY AT PARTICLE LOCATION
 
 
@@ -150,8 +143,6 @@ c INTERPOLATE THE EDDY-DIFFUSIVITY AT THE PARTICLE LOCATION
                   call diffusivity_interp_1d(bin_centres,nbins,K(2,:,2)
      &                  ,ii,y2(n,b),Ky2)
      
-                 !print*,'diffusivity interpolated'
-                  
 
                   
 c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM    
@@ -163,9 +154,17 @@ c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM
                   call diffusivity_derivative(bin_centres,nbins
      &                  ,K(2,:,2),ii,y2(n,b),dKdy2)
      
-                !print*,'derivative calculated'
-     
 
+c SCALE DIFFUSIVTY AND ITS DERIVATIVE
+
+                 Kx1 = Kx1*(tscale/86400.)/((scale/(10**5))**2)
+                 Ky1 = Ky1*(tscale/86400.)/((scale/(10**5))**2)
+                 Kx2 = Kx2*(tscale/86400.)/((scale/(10**5))**2)
+                 Ky2 = Ky2*(tscale/86400.)/((scale/(10**5))**2)
+                 
+                 dKdy1 = dKdy1*(tscale/86400.)/((scale/(10**5)))
+                 dKdy2 = dKdy2*(tscale/86400.)/((scale/(10**5)))
+     
 C ADVECT PARTICLES
       
                   x1_diff = (u1+U_0+dKdx1)*dt_nondim + 
@@ -210,6 +209,7 @@ C ADVECT PARTICLES
                   x2_traj(n,b) = x2_traj(n,b) + x2_diff
                   y1_traj(n,b) = y1_traj(n,b) + y1_diff
                   y2_traj(n,b) = y2_traj(n,b) + y2_diff
+                  
       
       
 c APPLY DOUBLY PERIODIC BOUNDARY CONDITIONS

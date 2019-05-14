@@ -183,8 +183,8 @@ c -----------------------------------------------------------------------------
       sigma = alpha + beta*ay + gamma*ay**2 
      &    + delta*ay**3
         
-        if (k .eq. 1) then
-        dsigma = -(beta + 2*gamma*ay + 3*delta*ay**2)
+        if (k .eq. 2) then
+        dsigma = (beta + 2*gamma*ay + 3*delta*ay**2)
         
         else
         

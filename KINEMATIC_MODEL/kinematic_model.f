@@ -40,15 +40,15 @@
      & '/home/clustor2/ma/j/jp1115/DATA/2/'
       
       character*(*), parameter :: psi_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/psi_top.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/psi_bottom.nc'
       character*(*), parameter :: u_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/u_top.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/u_bottom.nc'
       character*(*), parameter :: v_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/v_top.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/v_bottom.nc'
       character*(*), parameter :: traj_file = 
      &   trim(home_dir) // 'TRAJ/KINEMATIC/traj_top.nc'
       character*(*), parameter :: diff_file = 
-     &   trim(home_dir) // 'TRAJ/KINEMATIC/diff_top.nc'
+     &   trim(home_dir) // 'TRAJ/KINEMATIC/diff_bottom.nc'
       
       real*8 psi(ii,jj),x_c(ii),y_c(jj),xnd(ii),ynd(jj),cnd
       real*8 k_o
@@ -86,8 +86,8 @@ C ------- KINEMATIC MODEL PARAMETERS --------------
             
           else
           
-            factor = 6.54
-            A = 146.27
+            factor = 5.47474747
+            A = 191.977480738
         
           endif
       
@@ -105,7 +105,7 @@ C ------- KINEMATIC MODEL PARAMETERS --------------
       if (regime .eq. 1) then
        y_centre = 302. ! centre in grid points
       else
-       y_centre = 278.
+       y_centre = 282.
       endif
       cnd = c*2*pi/ii
       bin_width = dfloat(jj)/nbins

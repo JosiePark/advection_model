@@ -74,7 +74,9 @@ c ----- Initialise trajectory arrays
         print*,'ave_name', ave_name
         if (i_start .eq. 0) then
         print*,'i_start = 0'
+        if (i_pseudo .eq. 1) then
         call create_binned_file(traj_file,nbins,npoints,release_no)
+        endif
         call create_binned_file(full_traj_file,nbins,npoints,release_no)
         if (i_eddy .eq. 1) then
         call create_binned_file(eddy_traj_file,nbins,npoints,release_no)
@@ -202,6 +204,8 @@ c BIN PARTICLES UNIFORMLY
             x2r_coord(p,n) = 0
             y2r_coord(p,n) = 0
             
+            if (i_pseudo .eq. 1) then
+            
             x1r_pseudo(p,n) = x0
             y1r_pseudo(p,n) = y0
             x2r_pseudo(p,n) = x0
@@ -211,6 +215,8 @@ c BIN PARTICLES UNIFORMLY
             y1r_pseudo_coord(p,n) = 0
             x2r_pseudo_coord(p,n) = 0
             y2r_pseudo_coord(p,n) = 0
+            
+            endif
             
             if (i_eddy .eq. 1) then
             
@@ -243,6 +249,7 @@ c BIN PARTICLES UNIFORMLY
             y1_coord = y1r_coord(p,:)
             y2_coord = y2r_coord(p,:)
                         
+            if (i_pseudo .eq. 1) then
 
             call write_binned_file(traj_file,npoints,p,k
      &       ,x1,y1
@@ -250,6 +257,9 @@ c BIN PARTICLES UNIFORMLY
      &       ,x1_coord,y1_coord,x2_coord
      &       ,y2_coord
      &       ,release_time(k),nrel(k))
+     
+     
+            endif
      
             call write_binned_file(full_traj_file,npoints,p,k
      &       ,x1,y1
@@ -545,7 +555,7 @@ c FULL ADVECTION
         if (isolve.eq.0) then
         
         call rk4_bicubic(ii,jj,x1r(p,n),y1r(p,n)
-     &   ,dt_nondim,U_0,M1_old,M1_half,M1_new
+     &   ,dt_nondim,dfloat(0),M1_old,M1_half,M1_new
      & ,x_diff1,y_diff1)
         call rk4_bicubic(ii,jj,x2r(p,n),y2r(p,n)
      &   ,dt_nondim,dfloat(0),M2_old,M2_half,M2_new
@@ -555,7 +565,7 @@ c FULL ADVECTION
         
         
         call rk4_2dcubic(ii,jj,x1r(p,n),y1r(p,n)
-     &   ,dt_nondim,U_0,a1_old,b1_old,c1_old
+     &   ,dt_nondim,dfloat(0),a1_old,b1_old,c1_old ! changed u0 to 0
      & ,d1_old,a1_half,b1_half,c1_half,d1_half
      & ,a1_new,b1_new,c1_new,d1_new
      & ,x_diff1,y_diff1)
@@ -570,6 +580,7 @@ c FULL ADVECTION
 c MEAN CONTRIBUTION FOR THE PSEUDO TRAJECTORIES
 
         
+      if (i_pseudo .eq. 1) then
                  if (isolve.eq.0) then
          
         call rk4_bicubic(ii,jj,x1r(p,n),y1r(p,n),dt_nondim,U_0
@@ -594,6 +605,8 @@ c MEAN CONTRIBUTION FOR THE PSEUDO TRAJECTORIES
      & ,x_av_diff2,y_av_diff2)
         
         endif 
+        
+        endif
         
 
         x1r(p,n) = x1r(p,n) + x_diff1
@@ -636,6 +649,8 @@ c MEAN CONTRIBUTION FOR THE PSEUDO TRAJECTORIES
               y2r_coord(p,n)= y2r_coord(p,n) +1
             endif
             
+        if (i_pseudo .eq. 1) then
+            
         x1r_pseudo(p,n) = x1r_pseudo(p,n) + x_diff1 - x_av_diff1
         x2r_pseudo(p,n) = x2r_pseudo(p,n) + x_diff2 - x_av_diff2
         y1r_pseudo(p,n) = y1r_pseudo(p,n) + y_diff1 - y_av_diff1
@@ -675,6 +690,7 @@ c MEAN CONTRIBUTION FOR THE PSEUDO TRAJECTORIES
               y2r_pseudo_coord(p,n)= y2r_pseudo_coord(p,n) +1
             endif
 
+        endif
 c EDDY ONLY TRAJECTORIES
 
         if (i_eddy .eq. 1) then
@@ -774,7 +790,10 @@ c     &       ((time_dim(k).lt.release_time(t) + release_length)))then
      
             !if (i_full.eq.1) then
             
+            
             do p = 1,nbins
+            
+            if (i_pseudo .eq. 1) then
             
             x1 = x1r_pseudo(p,:)
             x2 = x2r_pseudo(p,:)
@@ -793,6 +812,10 @@ c     &       ((time_dim(k).lt.release_time(t) + release_length)))then
      &       ,x1_coord,y1_coord
      &       ,x2_coord,y2_coord
      &       ,time_day,nrel(k))
+     
+     
+            endif
+            
      
             x1 = x1r(p,:)
             x2 = x2r(p,:)

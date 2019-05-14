@@ -8,10 +8,10 @@ C MODULE THAT CONTAINS THE INPUTS FOR THE DIFFUSION MODEL
      & ,coord_range
       real*8 dt,max_run,basinscale,U_0,Rd,H1,H2,beta
       
-      parameter(npoints_sqrt = 1,npoints=4000)
+      parameter(npoints_sqrt = 1,npoints=1000)
       parameter(ii=512,jj=512,jj1= 3*jj)
       parameter(dt = 3600.) ! how often in seconds you wish to advect particle
-      parameter(max_run = 2000.) ! length of experiment in days
+      parameter(max_run = 1000.) ! length of experiment in days
       parameter(k_save = 1) ! how often you wish to save trajectory data in days
       parameter(sim = 2)
       parameter(nbins = 10)
@@ -25,12 +25,12 @@ C MODULE THAT CONTAINS THE INPUTS FOR THE DIFFUSION MODEL
      & ,coord_range =3)
       
         character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/2/'
+     & '/home/clustor2/ma/j/jp1115/DATA/1/'
 
      
        character*(*), parameter :: file_name = 
      &   trim(home_dir) // 'TRAJ/DIFFUSION/
-     &full_pv_diffusion_trajectories.nc'
+     &full_scaled_diffusion_trajectories.nc'
        character*(*), parameter :: ave_file =
      &   trim(home_dir) // 'QG/QG_ave.nc'
        character*(*), parameter :: diff_file =

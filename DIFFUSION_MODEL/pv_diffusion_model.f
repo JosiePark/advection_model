@@ -185,30 +185,13 @@ c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM
                   call diffusivity_derivative(bin_centres,nbins
      &                  ,KPV,ii,y1(n,b),dKdy1)
                  
+c SCALE DIFFUSIVITY AND ITS DERIVATIVE
 
-     
+                Kx1 = Kx1*(tscale/86400.)/((scale/(10**5))**2)
+                Ky1 = Ky1*(tscale/86400.)/((scale/(10**5))**2)
                 
-c DETERMINE WHICH EDDY DIFFUSIVITY CONSTANT TO DIFFUSE PARTICLE WITH
-
-c                do bb = 1,nbins
-c                    if (y1(n,bb) .le. bin_corners(bb+1)) then
-c                        Kx1 = K(1,bb,1)
-c                        Ky1 = K(2,bb,1)
-c                        !print*,'b=',bb
-c                        goto 10
-c                    endif
-c                enddo
-c10      continue
-c                do bb = 1,nbins
-c                    if (y2(n,bb) .le. bin_corners(bb+1)) then
-c                        Kx2 = K(1,b,2)
-c                        Ky2 = K(2,b,2)
-c                        !print*,'b=',bb
-c                        goto 11
-c                    endif
-c                enddo
-c11      continue
-
+                dKdy1 = dKdy1*(tscale/86400.)/((scale/(10**5)))
+                
 C ADVECT PARTICLES
       
                   x1_diff = (u1+dKdx1)*dt_nondim + 

@@ -18,7 +18,7 @@ C ANALYTICALLY
       real*8 bin_width,u0
       real*8 a1,a2,a3,a4,PC
       integer i_zonal
-      integer layer
+      integer layer,regime
       integer ii,jj,k_rec,nbins
       parameter(ii = 512, jj = 512)
       parameter(max_time = 1000.)
@@ -26,9 +26,10 @@ C ANALYTICALLY
       parameter(basinscale = 520.d5)
       parameter(nbins = 10)
       parameter(u0 = 0.d0)
-      parameter(layer = 2
+      parameter(layer = 2)
+      parameter(regime = 2)
       
-      parameter(i_zonal = 1)
+      parameter(i_zonal = 0)
       
         integer i,j,n,t_tot_day,iseed,b,k
       
@@ -44,7 +45,7 @@ C ANALYTICALLY
       real*8 u(ii,jj), v(ii,jj)
       
       character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
       
       character*(*), parameter :: psi_file = 
      &   trim(home_dir) // 'TRAJ/KINEMATIC/psi_bottom.nc'
@@ -72,6 +73,8 @@ C ANALYTICALLY
     
 C ------- KINEMATIC MODEL PARAMETERS FOR THE ROSSBY WAVES --------------
 
+      if (regime .eq. 1) then
+
       if (layer .eq. 1) then
 
         factor = 3.*pi ! width scaling
@@ -84,18 +87,45 @@ C ------- KINEMATIC MODEL PARAMETERS FOR THE ROSSBY WAVES --------------
         
       endif
       
+      else
+      
+          if (layer .eq. 1) then
+
+            factor = 7.393939 ! width scaling
+            A = 609.8531 ! amplitude of wave
+            
+          else
+          
+            factor = 5.47474747
+            A = 191.977480738
+        
+          endif
+      
+      endif
+      
       kx = 2 ! wave number
-      T = 48. ! period in days
+      if (regime .eq. 1) then
+       T = 48. ! period in days
+      else
+       T = 44.
+      endif
       lambda = float(ii)/(kx) ! wavelength
       c = lambda/T ! propagation speed
       !c = 0.0001
-      y_centre = 302. ! centre in grid points
+      
+      if (regime .eq. 1) then
+       y_centre = 302. ! centre in grid points
+      else
+       y_centre = 282.
+      endif
       cnd = c*2*pi/ii
       bin_width = dfloat(jj)/nbins
       !cnd = 0.
       !c = 0.
       
 C ------ KINEMATIC MODEL PARAMETERS FOR THE ZONAL EOF -------------
+
+      if (regime .eq. 1) then
 
       if (layer .eq. 1) then
       
@@ -113,6 +143,25 @@ C ------ KINEMATIC MODEL PARAMETERS FOR THE ZONAL EOF -------------
         
       endif
       
+      else
+      
+      if (layer .eq. 1) then
+      
+        a1 = 1.36817756d-9
+        a2 = -8.76911757d-7
+        a3 = 1.00996845d-4
+        a4 = 4.98998122d-3
+        
+      else
+    
+        a1 = 8.47911917d-10
+        a2 = -5.32121346d-7
+        a3 = 5.69107841d-5
+        a4 = 3.54463751d-3
+        
+      endif
+      
+      endif
     
 c ------- DEFINE SPATIAL VARIABLES ----------------
 
@@ -191,7 +240,11 @@ C ------ RANDOMLY GENERATE PARTICLES -----------
        else
        k_o = k_o + 1
        
+       if (regime .eq. 1) then
        call read_one_pc_netcdf(pc_file,int(time_day)+1,5,PC)
+       else
+       call read_one_pc_netcdf(pc_file,int(time_day)+1,1,PC)
+       endif
 
 C ------ CALCULATE VELOCITY FIELDS AT THE GRID POINTS BY ANALYTICALLY DIFFERENTIATING ------
 

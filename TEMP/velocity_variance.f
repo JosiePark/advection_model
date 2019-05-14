@@ -87,8 +87,8 @@ C CALCULATE PRODUCT
 
 C TAKE TIME AVERAGE
 
-        sigma1 = sigma1/(time(t_len))
-        sigma2 = sigma2/(time(t_len))
+        sigma1 = sigma1/(t_len)
+        sigma2 = sigma2/(t_len)
 
 C WRITE TO FILE
 

@@ -47,7 +47,7 @@ c OTHERWISE SET TO 0
       parameter(eof_option = 0)
      
       character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
 
      
        character*(*), parameter :: file_name = 
@@ -56,13 +56,13 @@ c OTHERWISE SET TO 0
      &   trim(home_dir) // 'QG/QG_ave.nc'
        character*(*), parameter :: full_traj_file =
      &   trim(home_dir) // 'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_1-20_full.nc'  
+     &EOF_trajectories_1-20_full_minus_U0.nc'  
        character*(*), parameter :: traj_file =
      &  trim(home_dir) // 'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_1-20_pseudo.nc'
+     &EOF_trajectories_1-20_pseudo_minus_U0.nc'
         character*(*), parameter :: eddy_traj_file =
      & trim(home_dir) //'TRAJ/UNIFORM_BINS/
-     &EOF_trajectories_1-20_eddy.nc'
+     &EOF_trajectories_1-20_eddy_minus_U0.nc'
        character*(*), parameter :: eof_file =
      &  trim(home_dir) // 'QG/eof_1-20.nc'
        character*(*), parameter :: pseudo_name =
