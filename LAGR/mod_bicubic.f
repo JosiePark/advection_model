@@ -4,6 +4,8 @@ c Module that contains subroutines necessary for spatial bicubic interpolation
       
       contains
       
+c FUNCTION THAT CALCULATES INVERSE
+      
       function inv(A) result(Ainv)
           implicit none
       real*8, dimension(:,:), intent(in) :: A
@@ -37,6 +39,8 @@ c Module that contains subroutines necessary for spatial bicubic interpolation
          stop 'Matrix inversion failed!'
       end if
         end function inv
+        
+c MATRIX MULTIPLICATION
       
         function MATMULT(X,Y) result(XY)
         implicit none
@@ -61,8 +65,14 @@ c Module that contains subroutines necessary for spatial bicubic interpolation
         
         end function MATMULT
     
+C FINDS THE MATRIX OF COEFFICIENTS
         
         subroutine A_matrix(ii,jj,psi,A_mat)
+        
+c INPUT : ii,jj : grid size
+c INPUT : psi(ii,jj) : stream function
+c OUTPUT : A_mat(ii,jj,4,4) : 4 X 4 matrix of coefficients stored at each
+c                             grid point
         
         implicit none
         
@@ -133,7 +143,14 @@ c Module that contains subroutines necessary for spatial bicubic interpolation
         
         end subroutine
         
+c FINDS VELOCITY
+        
         subroutine bicubic(ii,jj,A_mat,x,y,u,v)
+
+C INPUT : ii,jj
+c INPUT : A_mat(ii,jj,4,4)
+c INPUT : x,y : interpolation point
+c OUPUT : u,v : velocities
         
         implicit none
         

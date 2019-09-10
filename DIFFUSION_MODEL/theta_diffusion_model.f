@@ -1,7 +1,7 @@
 c MODEL THAT RUNS A DIFFUSION MODEL USING EDDY DIFFUSIVITIES 
 C CALCULATED FROM LAGRANGIAN TRAJECTORIES
 
-      program diffusion_model
+      program theta_diffusion_model
       
       use mod_diff_input
       use mod_diff_constants
@@ -14,7 +14,28 @@ C CALCULATED FROM LAGRANGIAN TRAJECTORIES
       use mod_1dinterp
       use mod_stochastic_parameters
       
+c REWRITE SO THAT THE DERIVED SIFFUSIVTY IS READ FROM A NETCDF FILE THAT
+C IS PREVIOUSLY WRITTEN
+      
       implicit none
+      
+      character*(*), parameter :: theta_file = 
+     &   trim(home_dir) // 'STATS/THETA/theta.nc'
+      character*(*), parameter :: sigma_file = 
+     &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'
+     
+      real*8 theta(2,2,nbins),tmp1(2,2,ii,jj),tmp2(2,2,ii,jj)
+      real*8 sigma11(ii,jj),sigma12(ii,jj),sigma21(ii,jj),sigma22(ii,jj)
+      real*8 asigma11(ii,jj),bsigma11(ii,jj),csigma11(ii,jj)
+     & ,dsigma11(ii,jj)
+      real*8 asigma12(ii,jj),bsigma12(ii,jj),csigma12(ii,jj)
+     & ,dsigma12(ii,jj)
+      real*8 asigma21(ii,jj),bsigma21(ii,jj),csigma21(ii,jj)
+     & ,dsigma21(ii,jj)
+      real*8 asigma22(ii,jj),bsigma22(ii,jj),csigma22(ii,jj)
+     & ,dsigma22(ii,jj)
+     
+      real*8 K11_tmp,K12_tmp,K21_tmp,K22_tmp
 
 C READ TIME-AVERAGED STREAM FUNCTION
 
@@ -29,11 +50,31 @@ C CALCULATE COEFFICIENTS FOR 2D-CUBIC SPATIAL INTERPOLATION
       
 C READ THE DIFFUSIVITY TENSOR
 
-      
-
       call read_diffusivity(diff_file,K)
       
       print*, 'diffusivity read'
+      
+c READ THE LAGRANGIAN TIME SCALE
+      
+      call read_theta_netcdf(theta_file,nbins,theta)
+      
+      print*,'theta=',theta
+      
+c Velocity variance (read from file) 
+      call read_vel_variance(sigma_file,tmp1,tmp2,ii,jj)
+      sigma11 = tmp1(1,1,:,:) ! top layer - zonal
+      sigma12 = tmp1(2,2,:,:) ! top layer - meridional
+      sigma21 = tmp2(1,1,:,:)
+      sigma22 = tmp2(2,2,:,:)
+      
+      call cubic_coeff_x(ii,jj,sigma11,asigma11
+     & ,bsigma11,csigma11,dsigma11)
+      call cubic_coeff_x(ii,jj,sigma12,asigma12
+     & ,bsigma12,csigma12,dsigma12)
+      call cubic_coeff_x(ii,jj,sigma21,asigma21
+     & ,bsigma21,csigma21,dsigma21)
+      call cubic_coeff_x(ii,jj,sigma22,asigma22
+     & ,bsigma22,csigma22,dsigma22)
     
       
 c DETERMINE BINS
@@ -134,27 +175,47 @@ C SPATIALLY INTERPOLATE TO FIND TIME-AVERAGED VELOCITY AT PARTICLE LOCATION
      
 
      
-c INTERPOLATE THE EDDY-DIFFUSIVITY AT THE PARTICLE LOCATION
+c INTERPOLATE THETA
 
-                  call diffusivity_interp_1d(bin_centres,nbins,K(1,1,:)
-     &                  ,ii,y1(n,b),Kx1)
-                  call diffusivity_interp_1d(bin_centres,nbins,K(1,2,:)
-     &                  ,ii,y1(n,b),Ky1)
-                  call diffusivity_interp_1d(bin_centres,nbins,K(2,1,:)
-     &                  ,ii,y2(n,b),Kx2)
-                  call diffusivity_interp_1d(bin_centres,nbins,K(2,2,:)
-     &                  ,ii,y2(n,b),Ky2)
-     
+      call diffusivity_interp_1d(bin_centres,nbins,theta11
+     &   ,ii,y1(n,b),theta11_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,theta12
+     &   ,ii,y1(n,b),theta12_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,theta21
+     &   ,ii,y2(n,b),theta21_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,theta22
+     &   ,ii,y2(n,b),theta22_tmp)
 
+c INTERPOLATE SIGMA
+
+      call sigma_interpolation(ii,jj,asigma11,bsigma11
+     & ,csigma11,dsigma11,1
+     & ,x1(n,b),y1(n,b),sigma11_tmp,d_sigma11_tmp)
+      call sigma_interpolation(ii,jj,asigma12,bsigma12
+     & ,csigma12,dsigma12,2
+     & ,x1(n,b),y1(n,b),sigma12_tmp,d_sigma12_tmp)
+      call sigma_interpolation(ii,jj,asigma21,bsigma21
+     & ,csigma21,dsigma21,1
+     & ,x2(n,b),y2(n,b),sigma21_tmp,d_sigma21_tmp)
+      call sigma_interpolation(ii,jj,asigma22,bsigma22
+     & ,csigma22,dsigma22,2
+     & ,x2(n,b),y2(n,b),sigma22_tmp,d_sigma22_tmp)
+
+c CALCULATE DIFFUSIVITY
+
+      K11_tmp = sigma11_tmp*theta11_tmp
+      K12_tmp = sigma12_tmp*theta12_tmp
+      K22_tmp = sigma21_tmp*sigma21_tmp
+      K22_tmp = sigma22_tmp*sigma22_tmp
                   
 c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM    
               
                   dKdx1 = 0.
                   dKdx2 = 0.
                   call diffusivity_derivative(bin_centres,nbins
-     &                  ,K(1,2,:),ii,y1(n,b),dKdy1)
+     &                  ,K(2,:,1),ii,y1(n,b),dKdy1)
                   call diffusivity_derivative(bin_centres,nbins
-     &                  ,K(2,2,:),ii,y2(n,b),dKdy2)
+     &                  ,K(2,:,2),ii,y2(n,b),dKdy2)
      
 
 c SCALE DIFFUSIVTY AND ITS DERIVATIVE
@@ -174,7 +235,6 @@ C ADVECT PARTICLES
                   if(isnan(x1_diff)) then
                     print*,'dKdx1=',dKdx1
                     print*,'Kx1 =',Kx1
-                    print*,K(1,1,:)
                     stop
                   endif
                   y1_diff = (v1+dKdy1)*dt_nondim + 

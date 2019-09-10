@@ -8,16 +8,18 @@ c FILE NAMES
      & '/home/clustor2/ma/j/jp1115/DATA/2/'
      
       character*(*),parameter :: traj_file =
-     & trim(home_dir) // 'TRAJ/PV_BINS/full_PV_bins_trajectories.nc'
+     & trim(home_dir) // 'TRAJ/PV_BINS/
+     &test_full_pv_bins_trajectories.nc'
       character*(*),parameter :: ave_file = 
      & trim(home_dir) // 'QG/QG_ave.nc' 
       character*(*),parameter :: qg_file = 
      & trim(home_dir) // 'QG/QG.nc'
       character*(*),parameter :: diffusivity_file =
-     & trim(home_dir) // 'STATS/DIFFUSIVITY/full_PV_MEAN_DIFF.nc'
+     & trim(home_dir) // 'STATS/DIFFUSIVITY/
+     &test_full_PVDISP_MEAN_DIFF.nc'
       character*(*),parameter :: diffusion_file = 
      & trim(home_dir) // 'TRAJ/DIFFUSION/
-     &full_PV_diffusion_trajectories.nc'
+     &test_full_PV_diffusion_trajectories.nc'
        character*(*),parameter :: bin_file =
      & trim(home_dir) // 'TRAJ/PV_BINS/bin_width.nc'
      

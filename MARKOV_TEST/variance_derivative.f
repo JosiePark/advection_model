@@ -7,7 +7,7 @@
       implicit none
       
       character*(*), parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
      
       character*(*), parameter :: sigma_file = 
      &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'

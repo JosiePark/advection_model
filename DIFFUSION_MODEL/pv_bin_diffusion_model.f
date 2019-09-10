@@ -13,6 +13,7 @@ C CALCULATED FROM LAGRANGIAN TRAJECTORIES
       use mod_diffusion_netcdf
       use mod_1dinterp
       use mod_stochastic_parameters
+      use mod_traj_netcdf
       
       implicit none
 
@@ -34,6 +35,23 @@ C READ THE DIFFUSIVITY TENSOR
       call read_diffusivity(diff_file,K)
       
       print*, 'diffusivity read'
+      
+      call read_bin_width(bin_file,nbins,bin_width)
+      
+      print*,'bin_width = ',bin_width
+      
+c CALCULATE BIN CENTRES
+
+      bin_boundaries(1) = 0.
+      do b = 2,nbins+1
+        bin_boundaries(b) = bin_boundaries(b-1) + bin_width(b-1)
+      enddo
+
+      do b = 1,nbins
+        bin_centres(b) = .5*(bin_boundaries(b)+bin_boundaries(b+1))
+      enddo
+      print*,'bin_boundaries =',bin_boundaries
+      print*,'bin_centre=',bin_centres
     
       
 c DETERMINE BINS
@@ -49,7 +67,7 @@ c CALCULATE BIN CENTRES
 
       do b = 1,nbins
       
-        bin_centres(b) = .5*(bin_corners(b)+bin_corners(b+1))
+        uniform_bins(b) = .5*(bin_corners(b)+bin_corners(b+1))
       
       enddo
       
@@ -64,7 +82,7 @@ C GENERATE RANDOM LAGRANGIAN PARTICLES
       do b = 1,nbins
       
         x1(n,b) = ran1(iseed)*dfloat(jj)
-        y1(n,b) = ran1(iseed)*dfloat(jj)/nbins + bin_corners(b)
+        y1(n,b) = ran1(iseed)*bin_width(b) + bin_boundaries(b)
         x2(n,b) = x1(n,b)
         y2(n,b) = y1(n,b)
         
@@ -136,13 +154,13 @@ C SPATIALLY INTERPOLATE TO FIND TIME-AVERAGED VELOCITY AT PARTICLE LOCATION
      
 c INTERPOLATE THE EDDY-DIFFUSIVITY AT THE PARTICLE LOCATION
 
-                  call diffusivity_interp_1d(bin_centres,nbins,K(1,1,:)
+                  call diffusivity_interp_1d(uniform_bins,nbins,K(1,:,1)
      &                  ,ii,y1(n,b),Kx1)
-                  call diffusivity_interp_1d(bin_centres,nbins,K(1,2,:)
+                  call diffusivity_interp_1d(uniform_bins,nbins,K(2,:,1)
      &                  ,ii,y1(n,b),Ky1)
-                  call diffusivity_interp_1d(bin_centres,nbins,K(2,1,:)
+                  call diffusivity_interp_1d(uniform_bins,nbins,K(1,:,2)
      &                  ,ii,y2(n,b),Kx2)
-                  call diffusivity_interp_1d(bin_centres,nbins,K(2,2,:)
+                  call diffusivity_interp_1d(uniform_bins,nbins,K(2,:,2)
      &                  ,ii,y2(n,b),Ky2)
      
 
@@ -151,10 +169,10 @@ c APPROXIMATE DERIVATIVE OF THE DIFFUSIVITY - I.E THE DRIFT TERM
               
                   dKdx1 = 0.
                   dKdx2 = 0.
-                  call diffusivity_derivative(bin_centres,nbins
-     &                  ,K(1,2,:),ii,y1(n,b),dKdy1)
-                  call diffusivity_derivative(bin_centres,nbins
-     &                  ,K(2,2,:),ii,y2(n,b),dKdy2)
+                  call diffusivity_derivative(uniform_bins,nbins
+     &                  ,K(2,:,1),ii,y1(n,b),dKdy1)
+                  call diffusivity_derivative(uniform_bins,nbins
+     &                  ,K(2,:,2),ii,y2(n,b),dKdy2)
      
 
 c SCALE DIFFUSIVTY AND ITS DERIVATIVE
@@ -174,7 +192,6 @@ C ADVECT PARTICLES
                   if(isnan(x1_diff)) then
                     print*,'dKdx1=',dKdx1
                     print*,'Kx1 =',Kx1
-                    print*,K(1,1,:)
                     stop
                   endif
                   y1_diff = (v1+dKdy1)*dt_nondim + 
@@ -182,6 +199,8 @@ C ADVECT PARTICLES
                   if(isnan(y1_diff)) then
                     print*,'dKdy1=',dKdy1
                     print*,'Ky1 =',Ky1
+                    print*,'y1=',y1(n,b)
+                    print*,'K = ',K(2,:,1)
                     stop
                   endif
                   

@@ -7,6 +7,7 @@
       use mod_qg2_netcdf
       use mod_random
       use mod_diffusion_netcdf
+      use mod_traj_netcdf
       
       implicit none
       
@@ -16,11 +17,12 @@
       character*(*), parameter :: ave_file = 
      &   trim(home_dir) // 'QG/QG_ave.nc'
       character*(*), parameter :: theta_file = 
-     &   trim(home_dir) // 'STATS/THETA/pseudo_theta_osc_test.nc'
+     &   trim(home_dir) // 'STATS/THETA/pseudo_theta_osc.nc'
       character*(*), parameter :: sigma_file = 
-     &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'
+     &   trim(home_dir) // 'STATS/SIGMA/new_lagrangian_sigma.nc'
       character*(*), parameter :: file_name =
-     &   trim(home_dir) // 'TRAJ/NEW_MARKOV1/eulerian_sigma_markov1.nc' 
+     &   trim(home_dir) // 
+     & 'TRAJ/FINAL_MARKOV1/pv_bin_lagrangian_diff_markov1.nc' 
       character*(*), parameter :: d_sigma_file =
      &   trim(home_dir) // 'TRAJ/DIFFUSION/d_sigma.nc' 
       character*(*), parameter :: d_invsigma_file =
@@ -28,7 +30,9 @@
       character*(*), parameter :: b_file =
      &   trim(home_dir) // 'TRAJ/DIFFUSION/random_forcing.nc' 
       character*(*), parameter :: diff_file =
-     &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_MEAN_DIFF.nc' 
+     &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_new_DIFF.nc' 
+      character*(*),parameter :: bin_file =
+     & trim(home_dir) // 'TRAJ/PV_BINS/test_bin_width.nc'
      
       integer ii,jj,nbins,npoints
       parameter(ii = 512,jj = 512,nbins = 10,npoints=1000)
@@ -91,6 +95,11 @@
       real*8 sigma11_mean,sigma12_mean,sigma21_mean,sigma22_mean
       real*8 sum_tmp
       
+      real*8 d_K11_tmp, d_K12_tmp, d_K21_tmp,d_K22_tmp
+      real*8 d_theta11_tmp, d_theta12_tmp, d_theta21_tmp, d_theta22_tmp
+      
+      real*8,allocatable,dimension(:,:,:,:) :: sigma
+      
       parameter(k_save = 1)
          
       integer nrec,t_len
@@ -110,10 +119,21 @@
       
       real*8 K11_tmp,K12_tmp,K21_tmp,K22_tmp
       real*8 start_time,stop_time
+      
+      real*8 dSdx1, dSdy1, dSdx2, dSdy2
+      
+      real*8 bin_width(nbins),bin_boundaries(nbins+1)
     
       
       
 c DETERMINE BIN WIDTHS 
+
+      call read_bin_width(bin_file,nbins,bin_width)
+      
+      bin_boundaries(1) = 0.
+      do b = 2,nbins+1
+        bin_boundaries(b) = bin_boundaries(b-1) + bin_width(b-1)
+      enddo
 
       do b = 1,nbins+1
         bin_corners(b) = (b-1)*(dfloat(jj)/nbins)
@@ -144,35 +164,18 @@ c CALCULATE COEFFICIENTS FOR MARKOV-1 MODEL
 c 1. Markov-1 time tensor (defined for each bin, read from file)
       call read_theta_netcdf(theta_file,nbins,theta)
       
+      !theta = 20.
+      
       print*,'theta=',theta
       
+c 2. Lagrangian Velocity Variance
 
+      call read_lagrangian_sigma(sigma_file,sigma)
       
-c 2. Velocity variance (read from file) 
-      call read_vel_variance(sigma_file,tmp1,tmp2,ii,jj)
-      sigma11 = tmp1(1,1,:,:) ! top layer - zonal
-      sigma12 = tmp1(2,2,:,:) ! top layer - meridional
-      sigma21 = tmp2(1,1,:,:)
-      sigma22 = tmp2(2,2,:,:)
+      print*,'sigma read'
+      print*,shape(sigma)
       
-      print*,'vel variance read'
-      
-      call cpu_time(start_time)
-      
-      call cubic_coeff_x(ii,jj,sigma11,asigma11
-     & ,bsigma11,csigma11,dsigma11)
-      call cubic_coeff_x(ii,jj,sigma12,asigma12
-     & ,bsigma12,csigma12,dsigma12)
-      call cubic_coeff_x(ii,jj,sigma21,asigma21
-     & ,bsigma21,csigma21,dsigma21)
-      call cubic_coeff_x(ii,jj,sigma22,asigma22
-     & ,bsigma22,csigma22,dsigma22)
-      
-      
-      call cpu_time(stop_time)
-      
-      print*,'calculating coefficients =',stop_time - start_time
-      
+
 c 3. Read diffusivity (from file)
 
       call read_diffusivity(diff_file,K_diff)
@@ -183,6 +186,12 @@ c 3. Read diffusivity (from file)
       print*, 'K21 = ',K_diff(1,:,2)
       print*, 'K22 = ',K_diff(2,:,2)
       
+      scale = basinscale/dfloat(ii)
+      uscale = 1
+      tscale = scale/uscale
+      
+      K_diff = K_diff*(tscale/86400.)/((scale/(10**5))**2)
+      
 C GENERATE RANDOM LAGRANGIAN PARTICLES
 
       iseed = 123456789
@@ -191,7 +200,8 @@ C GENERATE RANDOM LAGRANGIAN PARTICLES
       do b = 1,nbins
       
         x1(n,b) = ran1(iseed)*dfloat(jj)
-        y1(n,b) = ran1(iseed)*dfloat(jj)/nbins + bin_corners(b)
+        !y1(n,b) = ran1(iseed)*dfloat(jj)/nbins + bin_corners(b)
+        y1(n,b) = ran1(iseed)*bin_width(b) + bin_boundaries(b)
         x2(n,b) = x1(n,b)
         y2(n,b) = y1(n,b)
         
@@ -226,9 +236,7 @@ c DETERMINE TIME ARRAY
       
 C NON DIMENSIONALISE TIME
 
-      scale = basinscale/dfloat(ii)
-      uscale = 1
-      tscale = scale/uscale
+
 
       dt_nondim = dt/tscale
       
@@ -240,45 +248,21 @@ C NON DIMENSIONALISE TIME
 c DETERMINE INITIAL CONDITIONS, 
 C u' IS INITIALISED AS A GAUSSIAN RANDOM VARIABLE WITH ZERO MEAN AND VARIANCE SIGMA MEAN
 
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma11(i,j)
-      enddo
-      enddo
-      sigma11_mean = sum_tmp/(ii*jj)
-      
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma12(i,j)
-      enddo
-      enddo
-      sigma12_mean = sum_tmp/(ii*jj)
-      
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma21(i,j)
-      enddo
-      enddo
-      sigma21_mean = sum_tmp/(ii*jj)
-      
-      
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma22(i,j)
-      enddo
-      enddo
-      sigma22_mean = sum_tmp/(ii*jj)
+c      do n = 1,npoints
+c      do b = 1,nbins
+c        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(b,1,1,1))
+c        u1_fluc_old(2,n,b) = random_normal()*dsqrt(sigma(b,2,2,1))
+c        u2_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(b,1,1,2))
+c        u2_fluc_old(2,n,b) = random_normal()*dsqrt(sigma(b,2,2,2))        
+c      enddo
+c      enddo
 
       do n = 1,npoints
       do b = 1,nbins
-        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma11_mean)
-        u1_fluc_old(2,n,b) = random_normal()*dsqrt(sigma12_mean)
-        u2_fluc_old(1,n,b) = random_normal()*dsqrt(sigma21_mean)
-        u2_fluc_old(2,n,b) = random_normal()*dsqrt(sigma22_mean)        
+        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(1,1,1,b))
+        u1_fluc_old(2,n,b) = random_normal()*dsqrt(sigma(1,2,2,b))
+        u2_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(2,1,1,b))
+        u2_fluc_old(2,n,b) = random_normal()*dsqrt(sigma(2,2,2,b))        
       enddo
       enddo
       
@@ -300,18 +284,28 @@ C DETERMINE DRIFT CORRECTION TERM
       
       ! sigma and dsigma
       
-      call sigma_interpolation(ii,jj,asigma11,bsigma11
-     & ,csigma11,dsigma11,1
-     & ,x1(n,b),y1(n,b),sigma11_tmp,d_sigma11_tmp)
-      call sigma_interpolation(ii,jj,asigma12,bsigma12
-     & ,csigma12,dsigma12,2
-     & ,x1(n,b),y1(n,b),sigma12_tmp,d_sigma12_tmp)
-      call sigma_interpolation(ii,jj,asigma21,bsigma21
-     & ,csigma21,dsigma21,1
-     & ,x2(n,b),y2(n,b),sigma21_tmp,d_sigma21_tmp)
-      call sigma_interpolation(ii,jj,asigma22,bsigma22
-     & ,csigma22,dsigma22,2
-     & ,x2(n,b),y2(n,b),sigma22_tmp,d_sigma22_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(1,1,1,:)
+c     &   ,ii,y1(n,b),sigma11_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(1,2,2,:)
+c     &   ,ii,y1(n,b),sigma12_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(2,1,1,:)
+c     &   ,ii,y2(n,b),sigma21_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(2,2,2,:)
+c     &   ,ii,y2(n,b),sigma22_tmp)
+     
+cc      print*,'sigma interpolated'
+cc      print*,sigma11_tmp,sigma12_tmp,sigma21_tmp,sigma22_tmp
+cc APPROXIMATE DERIVATIVE OF SIGMA    
+              
+c       d_sigma11_tmp = 0.
+c       d_sigma21_tmp = 0.
+c                  call diffusivity_derivative(bin_centres,nbins
+c     &                  ,sigma(1,2,2,:),ii,y1(n,b),d_sigma12_tmp)
+c                  call diffusivity_derivative(bin_centres,nbins
+c     &                  ,sigma(2,2,2,:),ii,y2(n,b),d_sigma22_tmp)
+     
+c      print*,'sigma differentiated'
+c      print*,d_sigma12_tmp,d_sigma22_tmp
      
       ! theta
       
@@ -324,33 +318,84 @@ C DETERMINE DRIFT CORRECTION TERM
       call diffusivity_interp_1d(bin_centres,nbins,theta22
      &   ,ii,y2(n,b),theta22_tmp)
      
+c      print*,'theta interpolated'
+      
+c      print*,theta11_tmp,theta12_tmp,theta21_tmp,theta22_tmp
+     
      
        ! diffusivity
+       
+!       print*,'K_diff=',K_diff
      
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,1)
-c     &                  ,ii,y1(n,b),K11_tmp)
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,1)
-c     &                  ,ii,y1(n,b),K12_tmp)
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,2)
-c     &                  ,ii,y2(n,b),K21_tmp)
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,2)
-c     &                  ,ii,y2(n,b),K22_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,1)
+     &                  ,ii,y1(n,b),K11_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,1)
+     &                  ,ii,y1(n,b),K12_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,2)
+     &                  ,ii,y2(n,b),K21_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,2)
+     &                  ,ii,y2(n,b),K22_tmp)
      
+!      print*,'diffusivity interpolated'
+!      print*,K11_tmp,K12_tmp,K22_tmp,K21_tmp
+     
+      d_K11_tmp = 0.
+      d_K21_tmp = 0.
+
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,K_diff(2,:,1),ii,y1(n,b),d_K12_tmp)
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,K_diff(2,:,2),ii,y2(n,b),d_K22_tmp)
+     
+     
+!      print*,'diffusivity differentiated'
+!      print*,d_K12_tmp,d_K22_tmp
+     
+      d_theta11_tmp = 0.
+      d_theta21_tmp = 0.
+
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,theta12,ii,y1(n,b),d_theta12_tmp)
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,theta22,ii,y2(n,b),d_theta22_tmp)
+     
+c!      print*,'theta differentiated'
+c!      print*,d_theta12_tmp,d_theta22_tmp
+     
+
+     
+ccc      print*,'K11,K12,K21,K22 = ',K11_tmp,K12_tmp,K21_tmp,K22_tmp
+     
+      
+cc REWRITE SO SIGMA IS NOT NEEDED!!!
+      
 cc      print*,'K11,K12,K21,K22 = ',K11_tmp,K12_tmp,K21_tmp,K22_tmp
      
-c      K11_tmp = K11_tmp*(tscale/86400.)/((scale/(10**5))**2)
-c      K12_tmp = K12_tmp*(tscale/86400.)/((scale/(10**5))**2)
-c      K21_tmp = K21_tmp*(tscale/86400.)/((scale/(10**5))**2)
-c      K22_tmp = K22_tmp*(tscale/86400.)/((scale/(10**5))**2)
+c      ! random forcing 
       
-c      print*,'K11,K12,K21,K22 = ',K11_tmp,K12_tmp,K21_tmp,K22_tmp
-     
-      ! random forcing 
+        sigma11_tmp = K11_tmp/theta11_tmp
+        sigma12_tmp = K12_tmp/theta12_tmp
+        sigma22_tmp = K22_tmp/theta22_tmp
+        sigma21_tmp = K21_tmp/theta21_tmp
+        
+!        print*,'sigma'
+!        print*,sigma11_tmp,sigma12_tmp,sigma22_tmp,sigma21_tmp
       
        b11_tmp = sqrt(2*sigma11_tmp/theta11_tmp)
        b12_tmp = sqrt(2*sigma12_tmp/theta12_tmp)
        b22_tmp = sqrt(2*sigma22_tmp/theta22_tmp)
        b21_tmp = sqrt(2*sigma21_tmp/theta21_tmp)
+       
+c       print*,'b calculated'
+c       print*,b11_tmp,b12_tmp,b21_tmp,b22_tmp
+       
+       d_sigma11_tmp = 0.
+       d_sigma21_tmp = 0.
+       
+       d_sigma12_tmp = (theta12_tmp*d_K12_tmp - K12_tmp*d_theta12_tmp)
+     & /(theta12_tmp**2) 
+       d_sigma22_tmp = (theta22_tmp*d_K22_tmp - K22_tmp*d_theta22_tmp)
+     & /(theta22_tmp**2) 
       
 c       b11_tmp = sqrt(2*sigma11_tmp**2/K11_tmp)
 c       b12_tmp = sqrt(2*sigma12_tmp**2/K12_tmp)
@@ -474,6 +519,8 @@ c       drift22 = 0.
             if(y2(n,b).ge.jj) then
                 y2(n,b) = y2(n,b) - dfloat(jj)
             endif
+            
+!            print*,'x1,y1,x2,y1=',x1(n,b),y1(n,b),x2(n,b),y2(n,b)
             
             if ((x1(n,b).le.0) .or. (x1(n,b) .ge. ii)) then
                 print*,'x1(n,b) = ',x1(n,b)

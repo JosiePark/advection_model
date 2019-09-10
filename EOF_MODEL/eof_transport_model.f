@@ -36,9 +36,9 @@ c ---- DEFINE DIMENSIONAL VARIABLES
         
 c ------ CREATE TRAJECTORY DATA FILE ----------------
 
-        traj_file = 'EOF_trajectories_modes_123478_psiav.nc'
+        traj_file = 'EOF_trajectories_1-2.nc'
         
-        eof_file = 'EOF_field_123478.nc'
+        eof_file = 'eof_1-2.nc'
         
 
         

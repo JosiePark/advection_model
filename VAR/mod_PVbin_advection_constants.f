@@ -86,7 +86,7 @@ c Names of model variables
      & ,psi1_eddy_half(ii,jj),psi2_eddy_half(ii,jj)
      & ,psi1_eddy_new(ii,jj), psi2_eddy_new(ii,jj)
      & ,rel1(ii,jj),rel2(ii,jj),zeta1(ii,jj),zeta2(ii,jj)
-     & ,S1,S2,beta1_y(jj),beta_nondim_u1,pv(ii,jj),SS,beta_nondim
+     & ,S1,S2,beta1_y(jj),beta_nondim_u1,SS,beta_nondim
      & ,beta_nondim_u2
      & ,psi1_eof(ii,jj,4),psi2_eof(ii,jj,4)
      & ,psi1_eof_half(ii,jj), psi2_eof_half(ii,jj)
@@ -118,7 +118,7 @@ c Variables needed for spatial interpolation (i.e polynomial coefficients)
      & ,a1_av(ii,jj),b1_av(ii,jj),c1_av(ii,jj),d1_av(ii,jj)
      & ,a2_av(ii,jj),b2_av(ii,jj),c2_av(ii,jj),d2_av(ii,jj)
      
-     & ,a(ii,jj),b(ii,jj),c(ii,jj),d(ii,jj)
+     & ,a(ii,-3:jj+3),b(ii,-3:jj+3),c(ii,-3:jj+3),d(ii,-3:jj+3)
      
      & ,psi1_x(4),psi2_x(4)
      
@@ -149,6 +149,7 @@ c Bin variables
       real*8 PV_bin(nbins),d_bin,Y_bin(nbins),j_bin(jj1)
       real*8 PV_bar(jj1),rel1_av(ii,jj),rel2_av(ii,jj),zeta1_av(ii,jj)
      & ,zeta2_av(ii,jj),PV_0,y_map,PV_bar_domain(jj) ,PV_av(ii,jj1)
+     & ,pv(ii,jj)
       integer bin_count(nbins),points_count,bin_stop(nbins),index
       
       end module mod_PVbin_advection_constants

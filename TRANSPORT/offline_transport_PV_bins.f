@@ -50,7 +50,9 @@ c ----- CALCULATE THE TRUE TIME ARRAY (WHICH TAKES INTO ACCOUNT THE CHOSEN OFFLI
         max_time_lag = time(t_len)*86400
         
         t_tot = int(release_length_secs/dt) ! total number of time steps per release
-        l_tot_day = int(86400/dt) ! total number of time steps per day
+        l_tot_day = int(86400./dt) ! total number of time steps per day
+        
+        print*, 'l_tot_day*k_save =', l_tot_day*k_save
 
         dt_nondim = dt/tscale
             
@@ -175,8 +177,8 @@ c ------- ONLY FOR PSEUDO TRAJECTORIES -----------
         nrec = 0
         do k = 1,release_no
         
-        print*, 'Starting particle advection for release number',k
-        print*, 't_tot =',t_tot
+        !print*, 'Starting particle advection for release number',k
+        !print*, 't_tot =',t_tot
         
 c ------------ MAIN CYCLE -----------------------------
 
@@ -213,7 +215,7 @@ c CALCULATE ZONAL FULL TIME-AVERAGED PV
       do j = 1,jj1
             beta1_y(j) = beta_nondim_u1*(dfloat(j-1)) ! only do for the top layer
       enddo
-      print*,'beta done'
+      !print*,'beta done'
       do j=1,jj
       do kk = 1,coord_range
             idx = j+(kk-1)*jj
@@ -245,7 +247,7 @@ c ----- find entry m in time such that time(m) < time_o(k) <= time(m+1)
             endif
         enddo
         
-        print*,'found time index'
+        !print*,'found time index'
 
 c ----- cubic interpolate psi in time to find psi
 c ----- at time_o(k), time_o(k-1)
@@ -262,7 +264,7 @@ c ---- time_o(k)
         call interp_time(ii,jj,time_cubic,time_dim(t),psi1,psi1_new)
         call interp_time(ii,jj,time_cubic,time_dim(t),psi2,psi2_new) ! psi1_new is the stream function
         
-        print*,'time interpolated'
+        !print*,'time interpolated'
 c------------------------------
 C CALCULATE PV
 c ----------------------------------
@@ -275,22 +277,21 @@ c ---------- make sure PV matches with PV_bar in regards to beta*y
       do j = jj+1,jj*2
             beta1_y(j-jj) = beta_nondim_u1*(dfloat(j-1)) ! only do for the top layer
       enddo
-      
+
       do j=1,jj
             do i = 1,ii
-                PV(i,j) = zeta1(i,j) + beta1_y(j)
+                PV(i,j) = zeta1(i,j) + beta1_y(j) ! CHANGED BETA1_Y(J) TO BETA1_Y(J+JJ)
             enddo
       enddo
  
 
-        call cubic_coeff_x(ii,jj
-     &    ,PV
-     &    ,a,b,c,d)      ! calculate coefficients required for interpolation   
+        call PV_cubic_coeff_x(ii,jj
+     &    ,zeta1,beta_nondim_u1
+     &    ,a,b,c,d)      ! calculate coefficients required for interpolation
      
-     
+      print*,'cubic_coeffs_calculated'
 c Bin the PV
 
-     
       d_bin = (maxval(PV)-minval(PV))/dfloat(nbins)
       
       do j = 1,jj1
@@ -320,19 +321,24 @@ c -----------------------------
 10      continue
         x0 = ran1(iseed)*dfloat(ii)
         y0 = ran1(iseed)*dfloat(jj)
+        !y0 = dfloat(jj-1)
         
 c -------------------------------------
 C CALCULATE PV AT PARTICLE LOCATION
 c -------------------------------------
 
-        call cubic_poly_x(ii,jj,x0 ! construct polynomial PV_x
+        call PV_cubic_poly_x(ii,jj,x0 ! construct polynomial PV_x
      &    ,y0,a,b,c,d,PV_x)
      
-        print*,'cubic polynomial constructed'
+        !print*,'cubic polynomial constructed'
      
         call cubic_interp(ii,jj,PV_x,y0,PV_0) 
         
-        print*,'interpolated'
+        !print*,'interpolated'
+        !print*,'PV_x=',PV_x
+        !print*,'PV_0 =',PV_0
+        
+        !print*,'PV_bins = ',PV_bin
 C --------------------------------------  
 c SORT PV_0 INTO APPROPRIATE BIN
 C ----------------------------------
@@ -344,11 +350,11 @@ C ----------------------------------
             endif
         enddo
         
-        print*,'sorted into bin'
+        !print*,'sorted into bin'
         
 11     continue
                 bin_count(bin_index) = bin_count(bin_index) + 1
-                print*,'bin_count,p=',bin_count(bin_index),bin_index
+                !print*,'bin_count,p=',bin_count(bin_index),bin_index
                 if (bin_count(bin_index).le.npoints) then
                     if ((i_full.eq.1).or.(i_pseudo.eq.1)) then
                 
@@ -1141,7 +1147,7 @@ c ----------------- EDDY INDUCED PARTICLE ADVECTION ---------------
             
 
              
-            if (k_s(k) .eq. l_tot_day*k_save) then
+            if (k_s(k) .ge. l_tot_day*k_save) then
             
             k_s(k) = 0
             

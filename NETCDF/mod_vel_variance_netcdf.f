@@ -318,4 +318,108 @@ c -----------------------------------------------------------------------------
      
       end subroutine write_variable_netcdf 
       
+c ----------------------------------------------------------------------
+      
+      subroutine read_lagrangian_sigma(file_name,sigma)
+      
+      implicit none
+      include 'netcdf.inc'
+      
+      character*(*) file_name
+      integer nbins
+      
+      integer retval,ncid,dimid(4),dim_len(4),i
+      
+      integer sigma_varid
+      
+      real*8,allocatable,dimension(:,:,:,:) :: sigma
+      real*8,allocatable,dimension(:,:,:,:) :: new_sigma
+      
+      integer count(4),start(4)
+      
+      character*(*) sigma_name
+      parameter(sigma_name = 'Lagrangian Velocity Variance')
+      
+      retval = nf_open(file_name,nf_nowrite,ncid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      print*,'sigma file found'
+      
+      print*,ncid
+      
+      retval = nf_inq_varid(ncid,sigma_name,sigma_varid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      print*,'sigma found'
+      
+      retval = nf_inq_vardimid(ncid,sigma_varid,dimid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      
+      do i = 1,4
+        
+        retval = nf_inq_dimlen(ncid,dimid(i),dim_len(i))
+        if (retval .ne. nf_noerr) call handle_err(retval)
+        
+      enddo
+      
+      print*,'dimension lengths = ',dim_len
+      
+      do i = 1,4
+        
+        count(i) = dim_len(i)
+        start(i) = 1
+        
+      enddo
+      
+      allocate(sigma(dim_len(1),dim_len(2),dim_len(3),dim_len(4)))
+      allocate(new_sigma(dim_len(4),dim_len(3),dim_len(2),dim_len(1)))
+      
+      retval = nf_get_vara_double(ncid,sigma_varid,start,count,sigma)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      
+      new_sigma = reshape(sigma, 
+     &     (/dim_len(4),dim_len(3),dim_len(2),dim_len(1)/),
+     &      ORDER = (/4,3,2,1/))
+      
+      retval = nf_close(ncid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+          
+      end subroutine read_lagrangian_sigma
+      
+c ------------------------------------------------------------------------
+c ------------------------------------------------------------------------
+      
+      subroutine read_pv_lagrangian_sigma(file_name,nbins,sigma)
+      
+      implicit none
+      include 'netcdf.inc'
+      
+      character*(*) file_name
+      integer nbins
+      real*8 sigma(nbins)
+      
+      integer retval,ncid,sigma_varid,start,count
+      
+      character*(*) sigma_name
+      parameter(sigma_name = 'Lagrangian Velocity Variance')
+      
+      retval = nf_open(file_name,nf_nowrite,ncid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      print*,'sigma file found'
+      
+      retval = nf_inq_varid(ncid,sigma_name,sigma_varid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      print*,'sigma found'
+      
+      start = 1
+      count = nbins
+      
+      retval = nf_get_vara_double(ncid,sigma_varid,start,count,sigma)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      
+      retval = nf_close(ncid)
+      if (retval .ne. nf_noerr) call handle_err(retval)
+      
+      
+      
+      end subroutine read_pv_lagrangian_sigma
+      
       end module mod_vel_variance_netcdf

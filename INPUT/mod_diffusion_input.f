@@ -25,23 +25,25 @@ C MODULE THAT CONTAINS THE INPUTS FOR THE DIFFUSION MODEL
      & ,coord_range =3)
       
         character*(*),parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'
 
      
        character*(*), parameter :: file_name = 
-     &   trim(home_dir) // 'TRAJ/DIFFUSION/
-     &full_scaled_diffusion_trajectories.nc'
+     &   trim(home_dir) // 'TRAJ/FINAL_DIFFUSION/
+     &pv_bin_diffusion_trajectories.nc'
        character*(*), parameter :: ave_file =
      &   trim(home_dir) // 'QG/QG_ave.nc'
        character*(*), parameter :: diff_file =
-     &   trim(home_dir) // 'STATS/DIFFUSIVITY/full_MEAN_DIFF.nc'
+     &   trim(home_dir) // 'STATS/DIFFUSIVITY/
+     &pseudo_new_DIFF.nc'
        character*(*), parameter :: pvdiff_file =
-     &   trim(home_dir) // 'STATS/DIFFUSIVITY/full_PVDISP_MEAN_DIFF.nc' 
+     &   trim(home_dir) // 'STATS/DIFFUSIVITY/
+     &test_full_PVDISP_MEAN_DIFF.nc' 
        character*(*),parameter :: traj_file =
      & trim(home_dir) // 'TRAJ/UNIFORM_BINS/
      &full_uniform_bins_trajectories.nc'
        character*(*),parameter :: bin_file =
-     & trim(home_dir) // 'TRAJ/PV_BINS/bin_width.nc'
+     & trim(home_dir) // 'TRAJ/PV_BINS/test_bin_width.nc'
        character*(*),parameter :: test_file =
      & trim(home_dir) // 'diffusivity_test.nc'
       

@@ -1,4 +1,4 @@
-      program markov1_model
+      program markov1_looping_model
       
       use mod_stochastic_parameters
       use mod_vel_variance_netcdf
@@ -16,11 +16,11 @@
       character*(*), parameter :: ave_file = 
      &   trim(home_dir) // 'QG/QG_ave.nc'
       character*(*), parameter :: theta_file = 
-     &   trim(home_dir) // 'STATS/THETA/pseudo_theta_osc_test.nc'
+     &   trim(home_dir) // 'STATS/THETA/theta_fitted_looping.nc'
       character*(*), parameter :: sigma_file = 
-     &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'
+     &   trim(home_dir) // 'STATS/SIGMA/new_lagrangian_sigma.nc'
       character*(*), parameter :: file_name =
-     &   trim(home_dir) // 'TRAJ/NEW_MARKOV1/eulerian_sigma_markov1.nc' 
+     &   trim(home_dir) // 'TRAJ/FINAL_MARKOV1/new_markov1_looping.nc' 
       character*(*), parameter :: d_sigma_file =
      &   trim(home_dir) // 'TRAJ/DIFFUSION/d_sigma.nc' 
       character*(*), parameter :: d_invsigma_file =
@@ -28,7 +28,9 @@
       character*(*), parameter :: b_file =
      &   trim(home_dir) // 'TRAJ/DIFFUSION/random_forcing.nc' 
       character*(*), parameter :: diff_file =
-     &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_MEAN_DIFF.nc' 
+     &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_new_DIFF.nc' 
+      character*(*), parameter :: omega_file =
+     &   trim(home_dir) // 'STATS/THETA/omega_estimate.nc' 
      
       integer ii,jj,nbins,npoints
       parameter(ii = 512,jj = 512,nbins = 10,npoints=1000)
@@ -54,7 +56,9 @@
      & ,cdsigma22(ii,jj),ddsigma22(ii,jj)
       real*8 sigma11(ii,jj),sigma12(ii,jj),sigma21(ii,jj),sigma22(ii,jj)
       real*8 theta(2,2,nbins)
+      real*8 omega(nbins,2)
       real*8 theta11(nbins),theta12(nbins),theta21(nbins),theta22(nbins)
+      real*8 omega11(nbins),omega12(nbins),omega21(nbins),omega22(nbins)
       real*8 time_av
       real*8 d_sigma12(ii,jj),d_sigma11(ii,jj)
      & ,d_sigma22(ii,jj),d_sigma21(ii,jj) ! derivatives of sigma
@@ -74,9 +78,13 @@
       real*8 sigma11_tmp,sigma12_tmp,sigma21_tmp,sigma22_tmp
       real*8 d_sigma11_tmp,d_sigma12_tmp,d_sigma21_tmp,d_sigma22_tmp
       real*8 theta11_tmp,theta12_tmp,theta21_tmp,theta22_tmp
+      real*8 omega11_tmp,omega12_tmp,omega21_tmp,omega22_tmp
       real*8 b11_tmp,b12_tmp,b21_tmp,b22_tmp
       real*8 u1,u2,v1,v2
       real*8 psi1_x(4),psi2_x(4)
+      
+      real*8 d_theta11_tmp,d_theta12_tmp,d_theta21_tmp,d_theta22_tmp
+      real*8 d_K11_tmp,d_K12_tmp,d_K21_tmp,d_K22_tmp
       
       real*8 drift11,drift21,drift12,drift22
       real*8 u1_fluc_old(2,npoints,nbins)
@@ -107,6 +115,7 @@
       
       real*8, allocatable, dimension(:) :: time
       real*8, allocatable, dimension(:,:,:) :: K_diff
+      real*8, allocatable, dimension(:,:,:,:) :: sigma
       
       real*8 K11_tmp,K12_tmp,K21_tmp,K22_tmp
       real*8 start_time,stop_time
@@ -144,34 +153,20 @@ c CALCULATE COEFFICIENTS FOR MARKOV-1 MODEL
 c 1. Markov-1 time tensor (defined for each bin, read from file)
       call read_theta_netcdf(theta_file,nbins,theta)
       
-      print*,'theta=',theta
+c      print*,'theta=',theta
+      
+      call read_omega_netcdf(omega_file,nbins,omega)
+      
+c      print*,'omega=',omega
       
 
       
 c 2. Velocity variance (read from file) 
-      call read_vel_variance(sigma_file,tmp1,tmp2,ii,jj)
-      sigma11 = tmp1(1,1,:,:) ! top layer - zonal
-      sigma12 = tmp1(2,2,:,:) ! top layer - meridional
-      sigma21 = tmp2(1,1,:,:)
-      sigma22 = tmp2(2,2,:,:)
+      call read_lagrangian_sigma(sigma_file,sigma)
       
-      print*,'vel variance read'
+c      print*,'vel variance read'
+c      print*,sigma
       
-      call cpu_time(start_time)
-      
-      call cubic_coeff_x(ii,jj,sigma11,asigma11
-     & ,bsigma11,csigma11,dsigma11)
-      call cubic_coeff_x(ii,jj,sigma12,asigma12
-     & ,bsigma12,csigma12,dsigma12)
-      call cubic_coeff_x(ii,jj,sigma21,asigma21
-     & ,bsigma21,csigma21,dsigma21)
-      call cubic_coeff_x(ii,jj,sigma22,asigma22
-     & ,bsigma22,csigma22,dsigma22)
-      
-      
-      call cpu_time(stop_time)
-      
-      print*,'calculating coefficients =',stop_time - start_time
       
 c 3. Read diffusivity (from file)
 
@@ -182,6 +177,8 @@ c 3. Read diffusivity (from file)
       print*, 'K12 = ',K_diff(2,:,1)
       print*, 'K21 = ',K_diff(1,:,2)
       print*, 'K22 = ',K_diff(2,:,2)
+      
+c 4. Read Omega from file
       
 C GENERATE RANDOM LAGRANGIAN PARTICLES
 
@@ -237,50 +234,26 @@ C NON DIMENSIONALISE TIME
       theta21 = theta(2,1,:)*86400./tscale
       theta22 = theta(2,2,:)*86400./tscale
       
+      omega12 = omega(:,1)*tscale/86400.
+      omega22 = omega(:,2)*tscale/86400.
+      
+      K_diff = K_diff*(tscale/86400.)/((scale/(10**5))**2)
+      
 c DETERMINE INITIAL CONDITIONS, 
 C u' IS INITIALISED AS A GAUSSIAN RANDOM VARIABLE WITH ZERO MEAN AND VARIANCE SIGMA MEAN
 
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma11(i,j)
-      enddo
-      enddo
-      sigma11_mean = sum_tmp/(ii*jj)
-      
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma12(i,j)
-      enddo
-      enddo
-      sigma12_mean = sum_tmp/(ii*jj)
-      
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma21(i,j)
-      enddo
-      enddo
-      sigma21_mean = sum_tmp/(ii*jj)
-      
-      
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma22(i,j)
-      enddo
-      enddo
-      sigma22_mean = sum_tmp/(ii*jj)
 
       do n = 1,npoints
       do b = 1,nbins
-        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma11_mean)
-        u1_fluc_old(2,n,b) = random_normal()*dsqrt(sigma12_mean)
-        u2_fluc_old(1,n,b) = random_normal()*dsqrt(sigma21_mean)
-        u2_fluc_old(2,n,b) = random_normal()*dsqrt(sigma22_mean)        
+        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(1,1,1,b))
+        u1_fluc_old(2,n,b) = random_normal()*dsqrt(sigma(1,2,2,b))
+        u2_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(2,1,1,b))
+        u2_fluc_old(2,n,b) = random_normal()*dsqrt(sigma(2,2,2,b))        
       enddo
       enddo
+      
+c      print*,'velcoity =',u1_fluc_old
+c      print*,u2_fluc_old
       
 
 C MAIN CYCLE
@@ -293,6 +266,9 @@ C MAIN CYCLE
       
       do b = 1,nbins
       do n = 1,npoints
+      
+c        print*,'y1=',y1(n,b)
+c        print*, 'b = ',b
 
 c INTERPOLATE PARAMETERS TO FIND VALUES AT PARTICLE LOCATIONS
 C DETERMINE DRIFT CORRECTION TERM
@@ -300,18 +276,21 @@ C DETERMINE DRIFT CORRECTION TERM
       
       ! sigma and dsigma
       
-      call sigma_interpolation(ii,jj,asigma11,bsigma11
-     & ,csigma11,dsigma11,1
-     & ,x1(n,b),y1(n,b),sigma11_tmp,d_sigma11_tmp)
-      call sigma_interpolation(ii,jj,asigma12,bsigma12
-     & ,csigma12,dsigma12,2
-     & ,x1(n,b),y1(n,b),sigma12_tmp,d_sigma12_tmp)
-      call sigma_interpolation(ii,jj,asigma21,bsigma21
-     & ,csigma21,dsigma21,1
-     & ,x2(n,b),y2(n,b),sigma21_tmp,d_sigma21_tmp)
-      call sigma_interpolation(ii,jj,asigma22,bsigma22
-     & ,csigma22,dsigma22,2
-     & ,x2(n,b),y2(n,b),sigma22_tmp,d_sigma22_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(:,1,1,1)
+c     &   ,ii,y1(n,b),sigma11_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(:,2,2,1)
+c     &   ,ii,y1(n,b),sigma12_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(:,1,1,2)
+c     &   ,ii,y2(n,b),sigma21_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,sigma(:,2,2,2)
+c     &   ,ii,y2(n,b),sigma22_tmp)
+     
+c       d_sigma11_tmp = 0.
+c       d_sigma21_tmp = 0.
+c                  call diffusivity_derivative(bin_centres,nbins
+c     &                  ,sigma(:,2,2,1),ii,y1(n,b),d_sigma12_tmp)
+c                  call diffusivity_derivative(bin_centres,nbins
+c     &                  ,sigma(:,2,2,2),ii,y2(n,b),d_sigma22_tmp)
      
       ! theta
       
@@ -324,17 +303,54 @@ C DETERMINE DRIFT CORRECTION TERM
       call diffusivity_interp_1d(bin_centres,nbins,theta22
      &   ,ii,y2(n,b),theta22_tmp)
      
+c      print*,'theta interpolated'
+c      print*,theta11_tmp,theta12_tmp,theta21_tmp,theta22_tmp
+     
+      ! omega
+     
+      call parameter_interp_1d(bin_centres,nbins,omega12
+     &   ,ii,y1(n,b),omega12_tmp)
+      call parameter_interp_1d(bin_centres,nbins,omega22
+     &   ,ii,y2(n,b),omega22_tmp)
+     
+c      print*, 'omega interpolated'
+c      print*,omega12_tmp,omega22_tmp
+
+     
      
        ! diffusivity
      
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,1)
-c     &                  ,ii,y1(n,b),K11_tmp)
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,1)
-c     &                  ,ii,y1(n,b),K12_tmp)
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,2)
-c     &                  ,ii,y2(n,b),K21_tmp)
-c      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,2)
-c     &                  ,ii,y2(n,b),K22_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,1)
+     &                  ,ii,y1(n,b),K11_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,1)
+     &                  ,ii,y1(n,b),K12_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(1,:,2)
+     &                  ,ii,y2(n,b),K21_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,K_diff(2,:,2)
+     &                  ,ii,y2(n,b),K22_tmp)
+     
+c      print*,'diffusivity interpolated'
+c      print*,K11_tmp,K12_tmp,K21_tmp,K22_tmp
+     
+      d_K11_tmp = 0.
+      d_K21_tmp = 0.
+
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,K_diff(2,:,1),ii,y1(n,b),d_K12_tmp)
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,K_diff(2,:,2),ii,y2(n,b),d_K22_tmp)
+     
+     
+c      print*,'diffusivity differentiated'
+c      print*,d_K12_tmp,d_K22_tmp
+     
+      d_theta11_tmp = 0.
+      d_theta21_tmp = 0.
+
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,theta12,ii,y1(n,b),d_theta12_tmp)
+                  call diffusivity_derivative(bin_centres,nbins
+     &                  ,theta22,ii,y2(n,b),d_theta22_tmp)
      
 cc      print*,'K11,K12,K21,K22 = ',K11_tmp,K12_tmp,K21_tmp,K22_tmp
      
@@ -343,14 +359,37 @@ c      K12_tmp = K12_tmp*(tscale/86400.)/((scale/(10**5))**2)
 c      K21_tmp = K21_tmp*(tscale/86400.)/((scale/(10**5))**2)
 c      K22_tmp = K22_tmp*(tscale/86400.)/((scale/(10**5))**2)
       
-c      print*,'K11,K12,K21,K22 = ',K11_tmp,K12_tmp,K21_tmp,K22_tmp
+c      print*,'theta differentiated'
+c      print*, d_theta12_tmp,d_theta22_tmp
      
       ! random forcing 
+      
+        sigma11_tmp = K11_tmp/theta11_tmp
+        sigma12_tmp = K12_tmp/theta12_tmp
+        sigma22_tmp = K22_tmp/theta22_tmp
+        sigma21_tmp = K21_tmp/theta21_tmp
+        
+c       print*,'sigma = '
+c       print*, sigma11_tmp,sigma12_tmp,sigma21_tmp,sigma22_tmp
       
        b11_tmp = sqrt(2*sigma11_tmp/theta11_tmp)
        b12_tmp = sqrt(2*sigma12_tmp/theta12_tmp)
        b22_tmp = sqrt(2*sigma22_tmp/theta22_tmp)
        b21_tmp = sqrt(2*sigma21_tmp/theta21_tmp)
+       
+c       print*,'forcing ='
+c       print*, b11_tmp,b12_tmp,b21_tmp,b22_tmp
+       
+       d_sigma11_tmp = 0.
+       d_sigma21_tmp = 0.
+       
+       d_sigma12_tmp = (theta12_tmp*d_K12_tmp - K12_tmp*d_theta12_tmp)
+     & /(theta12_tmp**2) 
+       d_sigma22_tmp = (theta22_tmp*d_K22_tmp - K22_tmp*d_theta22_tmp)
+     & /(theta22_tmp**2) 
+     
+c       print*,'d_sigma='
+c       print*,d_sigma12_tmp,d_sigma22_tmp
       
 c       b11_tmp = sqrt(2*sigma11_tmp**2/K11_tmp)
 c       b12_tmp = sqrt(2*sigma12_tmp**2/K12_tmp)
@@ -388,10 +427,15 @@ c        drift22 = .5*d_sigma22_tmp*(u2_fluc_old(2,n,b)
 c     &   *(u_bottom(2) + 2*u2_fluc_old(2,n,b))/sigma22_tmp + 1)
 
 
+! CHECK REMAINS UNIFORM - MAYBE SET TO ZERO
+
        drift11 = .5*(1+u1_fluc_old(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
        drift12 = .5*(1+u1_fluc_old(2,n,b)**2/sigma12_tmp)*d_sigma12_tmp
        drift21 = .5*(1+u2_fluc_old(1,n,b)**2/sigma21_tmp)*d_sigma21_tmp
        drift22 = .5*(1+u2_fluc_old(2,n,b)**2/sigma22_tmp)*d_sigma22_tmp
+       
+c       print*,'drift = '
+c       print*,drift11,drift12,drift21,drift22
 
 c       drift11 = d_sigma11_tmp
 c       drift12 = d_sigma12_tmp
@@ -406,25 +450,50 @@ c       drift22 = 0.
       
       ! update velocity fluctuation
       
-       u1_fluc_new(1,n,b) = u1_fluc_old(1,n,b) 
-     &  + (-u1_fluc_old(1,n,b)/theta11_tmp
-     & + drift11)*dt_nondim 
-     & + b11_tmp*random_normal()*dsqrt(dt_nondim)  
+c       u1_fluc_new(1,n,b) = u1_fluc_old(1,n,b) 
+c     &  + (-u1_fluc_old(1,n,b)/theta11_tmp - 
+c     & omega12_tmp*u1_fluc_old(2,n,b)
+c     & + drift11)*dt_nondim 
+c     & + b11_tmp*random_normal()*dsqrt(dt_nondim)  
      
-       u1_fluc_new(2,n,b) = u1_fluc_old(2,n,b) 
-     &  + (-u1_fluc_old(2,n,b)/theta12_tmp
-     & + drift12)*dt_nondim 
-     & + b12_tmp*random_normal()*dsqrt(dt_nondim)  
+c       u1_fluc_new(2,n,b) = u1_fluc_old(2,n,b) 
+c     &  + (-u1_fluc_old(2,n,b)/theta12_tmp 
+c     & + omega12_tmp*u1_fluc_old(1,n,b)
+c     & + drift12)*dt_nondim 
+c     & + b12_tmp*random_normal()*dsqrt(dt_nondim)  
      
-       u2_fluc_new(1,n,b) = u2_fluc_old(1,n,b) 
-     & + (-u2_fluc_old(1,n,b)/theta21_tmp
-     & + drift21)*dt_nondim 
-     & + b21_tmp*random_normal()*dsqrt(dt_nondim)  
+c       u2_fluc_new(1,n,b) = u2_fluc_old(1,n,b) 
+c     & + (-u2_fluc_old(1,n,b)/theta21_tmp 
+c     & - omega22_tmp*u2_fluc_old(2,n,b)
+c     & + drift21)*dt_nondim 
+c     & + b21_tmp*random_normal()*dsqrt(dt_nondim)  
      
-       u2_fluc_new(2,n,b) = u2_fluc_old(2,n,b) 
-     &  + (-u2_fluc_old(2,n,b)/theta22_tmp
-     & + drift22)*dt_nondim 
-     & + b22_tmp*random_normal()*dsqrt(dt_nondim)  
+c       u2_fluc_new(2,n,b) = u2_fluc_old(2,n,b) 
+c     &  + (-u2_fluc_old(2,n,b)/theta22_tmp 
+c     & + omega22_tmp*u2_fluc_old(1,n,b)
+c     & + drift22)*dt_nondim 
+c     & + b22_tmp*random_normal()*dsqrt(dt_nondim) 
+
+       u1_fluc_new(1,n,b) = u1_fluc_old(1,n,b) +
+     & (- u1_fluc_old(1,n,b)/theta11_tmp 
+     & - omega12_tmp*u1_fluc_old(2,n,b))*dt_nondim
+     & + b11_tmp*random_normal()*dsqrt(dt_nondim)
+       
+       u1_fluc_new(2,n,b) = u1_fluc_old(2,n,b) +
+     & (- u1_fluc_old(2,n,b)/theta12_tmp 
+     & + omega12_tmp*u1_fluc_old(1,n,b))*dt_nondim
+     & + b12_tmp*random_normal()*dsqrt(dt_nondim)
+       
+       u2_fluc_new(1,n,b) = u2_fluc_old(1,n,b) +
+     & (- u2_fluc_old(1,n,b)/theta21_tmp 
+     & - omega22_tmp*u2_fluc_old(2,n,b))*dt_nondim
+     & + b21_tmp*random_normal()*dsqrt(dt_nondim)
+       
+       u2_fluc_new(2,n,b) = u2_fluc_old(2,n,b) +
+     & (- u2_fluc_old(2,n,b)/theta22_tmp 
+     & + omega22_tmp*u2_fluc_old(1,n,b))*dt_nondim
+     & + b22_tmp*random_normal()*dsqrt(dt_nondim)
+     
      
       !print*,'u1_fluc =',u1_fluc_new(1,n,b)
       !print*,'u1_mean=',u_top(1)
@@ -432,6 +501,10 @@ c       drift22 = 0.
        !print*,'theta,a,b=',theta11_tmp,drift11,b11_tmp
        !print*,'u1_old,u1_new=',u1_fluc_old(1,n,b),u1_fluc_new(1,n,b)
        !print*,'x1_old,y1_old =', x1(n,b),y1(n,b)
+       
+c       print*,'new velocity = '
+c       print*,u1_fluc_new(:,n,b)
+c       print*,u2_fluc_new(:,n,b)
        
      
 
@@ -532,4 +605,4 @@ c       drift22 = 0.
       enddo
       
       
-      end program markov1_model
+      end program markov1_looping_model

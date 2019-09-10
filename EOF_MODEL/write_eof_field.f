@@ -10,7 +10,7 @@ c CODE THE READS EOF AND PC FILES AND WRITES A COMBINED EOF FIELD TO A NETCDF FI
 c NAME FILES
 
       character*(*) qg_file,eof_file,pc_file,new_file,ave_file
-      parameter(qg_file = '/work/jp1115/saves/2/QG/QG_attempt.nc')
+      parameter(qg_file = '/work/jp1115/saves/1/QG/QG_attempt.nc')
       parameter(ave_file =
      &  '/work/jp1115/saves/2/QG/QG_ave_attempt.nc')
       parameter(eof_file =

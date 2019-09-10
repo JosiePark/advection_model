@@ -33,10 +33,10 @@ C TO BE USED WITH PV_MAPPING
      &   trim(home_dir) // 'QG/QG_ave.nc'
        character*(*), parameter :: traj_file =
      &  trim(home_dir) // 'TRAJ/PV_BINS/
-     &pseudo_PV_bins_trajectories.nc'
+     &test_full_pv_bins_trajectories.nc'
        character*(*), parameter :: disp_file =
      &  trim(home_dir) // 'TRAJ/PV_BINS/
-     &pseudo_PV_mapped_dispersion.nc'
+     &test_full_PV_mapped_dispersion.nc'
        character*(*), parameter :: bin_file = 
      & trim(home_dir) // 'TRAJ/PV_BINS/
      &bin_width.nc'  

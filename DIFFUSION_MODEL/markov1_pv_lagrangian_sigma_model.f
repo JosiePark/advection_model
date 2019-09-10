@@ -1,4 +1,4 @@
-      program pv_markov1_model
+      program markov1_pv_lagrangian_markov1_model
       
       use mod_stochastic_parameters
       use mod_vel_variance_netcdf
@@ -12,26 +12,28 @@
       implicit none
       
       character*(*), parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/1/'                                      /'
+     & '/home/clustor2/ma/j/jp1115/DATA/2/'                                      /'
      
       character*(*), parameter :: ave_file = 
      &   trim(home_dir) // 'QG/QG_ave.nc'
       character*(*), parameter :: pv_theta_file = 
-     &   trim(home_dir) // 'STATS/THETA/theta_PV.nc'
+     &   trim(home_dir) // 'STATS/THETA/markov1_theta_PV.nc'
       character*(*), parameter :: theta_file = 
-     &   trim(home_dir) // 'STATS/THETA/theta.nc'
+     &   trim(home_dir) // 'STATS/THETA/pseudo_theta_osc.nc'
+      character*(*), parameter :: pv_sigma_file = 
+     &   trim(home_dir) // 'STATS/SIGMA/new_pv_lagrangian_sigma.nc'
       character*(*), parameter :: sigma_file = 
-     &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'
+     &   trim(home_dir) // 'STATS/SIGMA/new_lagrangian_sigma.nc'
       character*(*), parameter :: file_name =
      &   trim(home_dir) // 
-     &  'TRAJ/DIFFUSION/pv_markov1.nc' 
+     &  'TRAJ/FINAL_MARKOV1/pv_bin_pv_diff_spd_T_markov1.nc' 
        character*(*),parameter :: bin_file =
      & trim(home_dir) // 'TRAJ/PV_BINS/test_bin_width.nc'
        character*(*),parameter :: diffusivity_file =
      & trim(home_dir) // 'STATS/DIFFUSIVITY/
-     &full_PVDISP_MEAN_DIFF.nc' 
+     &test_full_PVDISP_MEAN_DIFF.nc' 
        character*(*), parameter :: diff_file =
-     &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_MEAN_DIFF.nc' 
+     &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_new_DIFF.nc' 
      
       integer ii,jj,nbins,npoints
       parameter(ii = 512,jj = 512,nbins = 10,npoints=1000)
@@ -39,6 +41,8 @@
       real*8 a1(ii,jj),b1(ii,jj),c1(ii,jj),d1(ii,jj)
       real*8 a2(ii,jj),b2(ii,jj),c2(ii,jj),d2(ii,jj)
       real*8 tmp1(2,2,ii,jj),tmp2(2,2,ii,jj)
+      real*8 pv_sigma(nbins)
+      real*8, allocatable, dimension(:,:,:,:) :: sigma
       real*8 asigma11(ii,jj),bsigma11(ii,jj)
      & ,csigma11(ii,jj),dsigma11(ii,jj) ! zonal, top layer
       real*8 asigma12(ii,jj),bsigma12(ii,jj)
@@ -58,9 +62,11 @@
       real*8 sigma11(ii,jj),sigma12(ii,jj),sigma21(ii,jj),sigma22(ii,jj)
       real*8 theta(2,2,nbins)
       real*8 theta11(nbins),theta12(nbins),theta21(nbins),theta22(nbins)
+      real*8 theta_pv(nbins),theta_pv_tmp, d_theta_pv_tmp
       real*8 time_av
       real*8 d_sigma12(ii,jj),d_sigma11(ii,jj)
      & ,d_sigma22(ii,jj),d_sigma21(ii,jj) ! derivatives of sigma
+      real*8 d_theta12_tmp, d_K12_tmp
       
       real*8 x1(npoints,nbins),x2(npoints,nbins),y1(npoints,nbins)
      & ,y2(npoints,nbins)
@@ -144,7 +150,7 @@ c CALCULATE BIN CENTRES
         bin_centres(b) = .5*(bin_boundaries(b)+bin_boundaries(b+1))
       enddo
 c      print*,'bin_boundaries =',bin_boundaries
-c      print*,'bin_centre=',bin_centres
+      print*,'bin_centre=',bin_centres
       
 c DETERMINE BINS
 
@@ -186,36 +192,27 @@ c CALCULATE COEFFICIENTS FOR MARKOV-1 MODEL
 
 c 1. Markov-1 time tensor (defined for each bin, read from file)
       call read_pv_theta_netcdf(pv_theta_file,nbins,theta12)
-      theta12 = theta12*86400./tscale
+      !theta12 = theta12*86400./tscale
+      theta_pv = theta12*86400./tscale
       
       call read_theta_netcdf(theta_file,nbins,theta)
       theta11 = theta(1,1,:)*86400./tscale
+      theta12 = theta(1,2,:)*86400./tscale
       !print*,'theta12 = ',theta(1,2,:)
       
-      !theta12 = theta(1,2,:)*86400./tscale
-      !theta12 = 3.
-c      print*,'theta12 = ',theta12
-      !stop
-      
+      !print*, 'theta12 = ',theta12
 
       
 c 2. Velocity variance (read from file) 
-      call read_vel_variance(sigma_file,tmp1,tmp2,ii,jj)
-      sigma11 = tmp1(1,1,:,:) ! top layer - zonal
-      sigma12 = tmp1(2,2,:,:) ! top layer - meridional
+      call read_lagrangian_sigma(sigma_file,sigma)
       
-c      print*,'vel variance read'
+      print*,'sigma read'
       
-      call cpu_time(start_time)
+c read PV lagrangian velocity variance
+
+      call read_pv_lagrangian_sigma(pv_sigma_file,nbins,pv_sigma)
       
-      call cubic_coeff_x(ii,jj,sigma11,asigma11
-     & ,bsigma11,csigma11,dsigma11)
-      call cubic_coeff_x(ii,jj,sigma12,asigma12
-     & ,bsigma12,csigma12,dsigma12)
-      
-      call cpu_time(stop_time)
-      
-c      print*,'calculating coefficients =',stop_time - start_time
+      print*,'pv vel variance read'
       
 c 3. PV diffusivity coefficient
 
@@ -241,7 +238,8 @@ C GENERATE RANDOM LAGRANGIAN PARTICLES
       do b = 1,nbins
       
         x1(n,b) = ran1(iseed)*dfloat(jj)
-        y1(n,b) = ran1(iseed)*dfloat(jj)/nbins + bin_corners(b)
+        !y1(n,b) = ran1(iseed)*dfloat(jj)/nbins + bin_corners(b)
+        y1(n,b) = ran1(iseed)*bin_width(b) + bin_boundaries(b)
         
         x1_traj(n,b) = x1(n,b)
         y1_traj(n,b) = y1(n,b)
@@ -274,26 +272,26 @@ c DETERMINE TIME ARRAY
 c DETERMINE INITIAL CONDITIONS, 
 C u' IS INITIALISED AS A GAUSSIAN RANDOM VARIABLE WITH ZERO MEAN AND VARIANCE SIGMA MEAN
 
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma11(i,j)
-      enddo
-      enddo
-      sigma11_mean = sum_tmp/(ii*jj)
+c      sum_tmp = 0.
+c      do i = 1,ii
+c      do j = 1,jj
+c        sum_tmp = sum_tmp + sigma11(i,j)
+c      enddo
+c      enddo
+c      sigma11_mean = sum_tmp/(ii*jj)
       
-      sum_tmp = 0.
-      do i = 1,ii
-      do j = 1,jj
-        sum_tmp = sum_tmp + sigma12(i,j)
-      enddo
-      enddo
-      sigma12_mean = sum_tmp/(ii*jj)
+c      sum_tmp = 0.
+c      do i = 1,ii
+c      do j = 1,jj
+c        sum_tmp = sum_tmp + sigma12(i,j)
+c      enddo
+c      enddo
+c      sigma12_mean = sum_tmp/(ii*jj)
       
       do n = 1,npoints
       do b = 1,nbins
-        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma11_mean)
-        u1_fluc_old(2,n,b) = random_normal()*dsqrt(sigma12_mean)       
+        u1_fluc_old(1,n,b) = random_normal()*dsqrt(sigma(1,1,1,b))
+        u1_fluc_old(2,n,b) = random_normal()*dsqrt(pv_sigma(b))       
       enddo
       enddo
       
@@ -312,32 +310,78 @@ C DETERMINE DRIFT CORRECTION TERM
 
       
       ! sigma and dsigma
+       !print*,' bin=',b
+       !print*,'y1(n,b)=',y1(n,b)
+       
       
-      call sigma_interpolation(ii,jj,asigma11,bsigma11
-     & ,csigma11,dsigma11,1
-     & ,x1(n,b),y1(n,b),sigma11_tmp,d_sigma11_tmp)
-      call sigma_interpolation(ii,jj,asigma12,bsigma12
-     & ,csigma12,dsigma12,2
-     & ,x1(n,b),y1(n,b),sigma12_tmp,d_sigma12_tmp)
+c      call diffusivity_interp_1d(uniform_bins,nbins,sigma(1,1,1,:)
+c     &   ,ii,y1(n,b),sigma11_tmp)
+c      call diffusivity_interp_1d(bin_centres,nbins,pv_sigma
+c     &   ,ii,y1(n,b),sigma12_tmp)
+     
+c      d_sigma11_tmp = 0.
+c      call diffusivity_derivative(bin_centres,nbins
+c     &                  ,pv_sigma,ii,y1(n,b),d_sigma12_tmp)
+     
+      
      
       ! theta
       
       call diffusivity_interp_1d(uniform_bins,nbins,theta11
      &   ,ii,y1(n,b),theta11_tmp)
-      call diffusivity_interp_1d(bin_centres,nbins,theta12
+     
+      !print*,'interpolating theta12'c
+c      call diffusivity_interp_1d(bin_centres,nbins,theta12
+c     &   ,ii,y1(n,b),theta12_tmp)
+     
+      !print*,'theta12_tmp = ',theta12_tmp
+      !if (theta12_tmp .le. 1.D-3) then
+      !  theta12_tmp =  3.
+      !endif
+      !print*,'theta12_tmp = ',theta12_tmp
+      call diffusivity_interp_1d(uniform_bins,nbins,theta12
      &   ,ii,y1(n,b),theta12_tmp)
+     
+      call diffusivity_interp_1d(bin_centres,nbins,theta_pv
+     &   ,ii,y1(n,b),theta_pv_tmp)
+     
+      
+     
+      
 
       
       ! KPV
       
-c      call diffusivity_interp_1d(bin_centres,nbins,KPV
-c     & , ii,y1(n,b),KPV_tmp) 
-c     
-c      call diffusivity_interp_1d(uniform_bins,nbins,K_diff(1,:,1)
-c     & , ii,y1(n,b),K_tmp) 
+      call diffusivity_interp_1d(bin_centres,nbins,KPV
+     & , ii,y1(n,b),KPV_tmp) 
      
-      ! random forcing 
+      call diffusivity_interp_1d(uniform_bins,nbins,K_diff(1,:,1)
+     & , ii,y1(n,b),K_tmp) 
+     
+      call diffusivity_derivative(bin_centres,nbins
+     &                  ,KPV,ii,y1(n,b),d_K12_tmp)
+    
+c      call diffusivity_derivative(bin_centres,nbins
+c     &                  ,theta12,ii,y1(n,b),d_theta12_tmp)
+     
+            call diffusivity_derivative(bin_centres,nbins
+     &                  ,theta_pv,ii,y1(n,b),d_theta_pv_tmp)
+
+            call diffusivity_derivative(uniform_bins,nbins
+     &                  ,theta12,ii,y1(n,b),d_theta12_tmp)
+     
+     
+cc      ! random forcing 
       
+      sigma11_tmp = K_tmp/theta11_tmp
+      sigma12_tmp = KPV_tmp/theta12_tmp
+
+      
+      d_sigma11_tmp = 0.
+      d_sigma12_tmp = (theta12_tmp*d_K12_tmp - KPV_tmp*d_theta12_tmp)
+     & /(theta12_tmp**2)  
+      
+    
       b11_tmp = sqrt(2*sigma11_tmp/theta11_tmp)
       b12_tmp = sqrt(2*sigma12_tmp/theta12_tmp) 
       
@@ -441,4 +485,4 @@ c       theta12_tmp = KPV_tmp/sigma12_tmp
             
       enddo
       
-      end program pv_markov1_model
+      end program 

@@ -1,4 +1,4 @@
-      program markov1_model
+      program markov1_looping_model
       
       use mod_stochastic_parameters
       use mod_vel_variance_netcdf
@@ -11,16 +11,16 @@
       implicit none
       
       character*(*), parameter :: home_dir = 
-     & '/home/clustor2/ma/j/jp1115/DATA/2/'
+     & '/home/clustor2/ma/j/jp1115/DATA/1/'
      
       character*(*), parameter :: ave_file = 
      &   trim(home_dir) // 'QG/QG_ave.nc'
       character*(*), parameter :: theta_file = 
-     &   trim(home_dir) // 'STATS/THETA/pseudo_theta_osc_test.nc'
+     &   trim(home_dir) // 'STATS/THETA/looping_theta.nc'
       character*(*), parameter :: sigma_file = 
      &   trim(home_dir) // 'STATS/SIGMA/velocity_variance.nc'
       character*(*), parameter :: file_name =
-     &   trim(home_dir) // 'TRAJ/NEW_MARKOV1/eulerian_sigma_markov1.nc' 
+     &   trim(home_dir) // 'TRAJ/NEW_MARKOV1/markov1_looping.nc' 
       character*(*), parameter :: d_sigma_file =
      &   trim(home_dir) // 'TRAJ/DIFFUSION/d_sigma.nc' 
       character*(*), parameter :: d_invsigma_file =
@@ -29,6 +29,8 @@
      &   trim(home_dir) // 'TRAJ/DIFFUSION/random_forcing.nc' 
       character*(*), parameter :: diff_file =
      &   trim(home_dir) // 'STATS/DIFFUSIVITY/pseudo_MEAN_DIFF.nc' 
+      character*(*), parameter :: omega_file =
+     &   trim(home_dir) // 'STATS/THETA/markov1_looping_omega_PV.nc' 
      
       integer ii,jj,nbins,npoints
       parameter(ii = 512,jj = 512,nbins = 10,npoints=1000)
@@ -54,7 +56,9 @@
      & ,cdsigma22(ii,jj),ddsigma22(ii,jj)
       real*8 sigma11(ii,jj),sigma12(ii,jj),sigma21(ii,jj),sigma22(ii,jj)
       real*8 theta(2,2,nbins)
+      real*8 omega(2,2,nbins)
       real*8 theta11(nbins),theta12(nbins),theta21(nbins),theta22(nbins)
+      real*8 omega11(nbins),omega12(nbins),omega21(nbins),omega22(nbins)
       real*8 time_av
       real*8 d_sigma12(ii,jj),d_sigma11(ii,jj)
      & ,d_sigma22(ii,jj),d_sigma21(ii,jj) ! derivatives of sigma
@@ -74,6 +78,7 @@
       real*8 sigma11_tmp,sigma12_tmp,sigma21_tmp,sigma22_tmp
       real*8 d_sigma11_tmp,d_sigma12_tmp,d_sigma21_tmp,d_sigma22_tmp
       real*8 theta11_tmp,theta12_tmp,theta21_tmp,theta22_tmp
+      real*8 omega11_tmp,omega12_tmp,omega21_tmp,omega22_tmp
       real*8 b11_tmp,b12_tmp,b21_tmp,b22_tmp
       real*8 u1,u2,v1,v2
       real*8 psi1_x(4),psi2_x(4)
@@ -146,6 +151,10 @@ c 1. Markov-1 time tensor (defined for each bin, read from file)
       
       print*,'theta=',theta
       
+      call read_theta_netcdf(omega_file,nbins,omega)
+      
+      print*,'omega=',omega
+      
 
       
 c 2. Velocity variance (read from file) 
@@ -182,6 +191,8 @@ c 3. Read diffusivity (from file)
       print*, 'K12 = ',K_diff(2,:,1)
       print*, 'K21 = ',K_diff(1,:,2)
       print*, 'K22 = ',K_diff(2,:,2)
+      
+c 4. Read Omega from file
       
 C GENERATE RANDOM LAGRANGIAN PARTICLES
 
@@ -236,6 +247,9 @@ C NON DIMENSIONALISE TIME
       theta12 = theta(1,2,:)*86400./tscale
       theta21 = theta(2,1,:)*86400./tscale
       theta22 = theta(2,2,:)*86400./tscale
+      
+      omega12 = omega(1,2,:)*tscale/86400.
+      omega22 = omega(2,2,:)*tscale/86400.
       
 c DETERMINE INITIAL CONDITIONS, 
 C u' IS INITIALISED AS A GAUSSIAN RANDOM VARIABLE WITH ZERO MEAN AND VARIANCE SIGMA MEAN
@@ -324,6 +338,14 @@ C DETERMINE DRIFT CORRECTION TERM
       call diffusivity_interp_1d(bin_centres,nbins,theta22
      &   ,ii,y2(n,b),theta22_tmp)
      
+      ! omega
+     
+      call diffusivity_interp_1d(bin_centres,nbins,omega12
+     &   ,ii,y1(n,b),omega12_tmp)
+      call diffusivity_interp_1d(bin_centres,nbins,omega22
+     &   ,ii,y2(n,b),omega22_tmp)
+
+     
      
        ! diffusivity
      
@@ -388,6 +410,8 @@ c        drift22 = .5*d_sigma22_tmp*(u2_fluc_old(2,n,b)
 c     &   *(u_bottom(2) + 2*u2_fluc_old(2,n,b))/sigma22_tmp + 1)
 
 
+! CHECK REMAINS UNIFORM - MAYBE SET TO ZERO
+
        drift11 = .5*(1+u1_fluc_old(1,n,b)**2/sigma11_tmp)*d_sigma11_tmp
        drift12 = .5*(1+u1_fluc_old(2,n,b)**2/sigma12_tmp)*d_sigma12_tmp
        drift21 = .5*(1+u2_fluc_old(1,n,b)**2/sigma21_tmp)*d_sigma21_tmp
@@ -407,22 +431,26 @@ c       drift22 = 0.
       ! update velocity fluctuation
       
        u1_fluc_new(1,n,b) = u1_fluc_old(1,n,b) 
-     &  + (-u1_fluc_old(1,n,b)/theta11_tmp
+     &  + (-u1_fluc_old(1,n,b)/theta11_tmp - 
+     & omega12_tmp*u1_fluc_old(2,n,b)
      & + drift11)*dt_nondim 
      & + b11_tmp*random_normal()*dsqrt(dt_nondim)  
      
        u1_fluc_new(2,n,b) = u1_fluc_old(2,n,b) 
-     &  + (-u1_fluc_old(2,n,b)/theta12_tmp
+     &  + (-u1_fluc_old(2,n,b)/theta12_tmp 
+     & + omega12_tmp*u1_fluc_old(1,n,b)
      & + drift12)*dt_nondim 
      & + b12_tmp*random_normal()*dsqrt(dt_nondim)  
      
        u2_fluc_new(1,n,b) = u2_fluc_old(1,n,b) 
-     & + (-u2_fluc_old(1,n,b)/theta21_tmp
+     & + (-u2_fluc_old(1,n,b)/theta21_tmp 
+     & - omega22_tmp*u2_fluc_old(2,n,b)
      & + drift21)*dt_nondim 
      & + b21_tmp*random_normal()*dsqrt(dt_nondim)  
      
        u2_fluc_new(2,n,b) = u2_fluc_old(2,n,b) 
-     &  + (-u2_fluc_old(2,n,b)/theta22_tmp
+     &  + (-u2_fluc_old(2,n,b)/theta22_tmp 
+     & + omega22_tmp*u1_fluc_old(1,n,b)
      & + drift22)*dt_nondim 
      & + b22_tmp*random_normal()*dsqrt(dt_nondim)  
      
@@ -532,4 +560,4 @@ c       drift22 = 0.
       enddo
       
       
-      end program markov1_model
+      end program markov1_looping_model
